@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{E6B21B8B-0AF8-4BEA-B089-6A7263A9D4CE}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>HttpsTypeSearch</RootNamespace>
+    <AssemblyName>HttpsTypeSearch</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <LangVersion>5</LangVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\KeePass-Source\Build\KeePass\Debug\Plugins\HttpsTypeSearch\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <Choose>
+    <When Condition="'$(Configuration)'=='Debug'">
+      <ItemGroup>
+        <ProjectReference Include="..\..\KeePass-Source\KeePass\KeePass.csproj">
+          <Project>{10938016-DEE2-4A25-9A5A-8FD3444379CA}</Project>
+          <Name>KeePass</Name>
+          <Private>False</Private>
+        </ProjectReference>
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <Reference Include="KeePass">
+          <HintPath>..\..\KeePass BinCompat\2.42\KeePass.exe</HintPath>
+          <Private>False</Private>
+        </Reference>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="EntryFieldReader.cs" />
+    <Compile Include="HttpsCertificateManager.cs" />
+    <Compile Include="HttpsTypeSearchExt.cs" />
+    <Compile Include="HttpsTypeSearchOptions.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SearchApiServer.cs" />
+    <Compile Include="SearchApiSettings.cs" />
+    <Compile Include="Searcher.cs" />
+    <Compile Include="SearchResult.cs" />
+    <Compile Include="SearchResults.cs" />
+    <Compile Include="SearchSettings.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

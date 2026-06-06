@@ -1,0 +1,33 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32616.157
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HttpsTypeSearch", "HttpsTypeSearch.csproj", "{E6B21B8B-0AF8-4BEA-B089-6A7263A9D4CE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeePass", "..\..\KeePass-Source\KeePass\KeePass.csproj", "{10938016-DEE2-4A25-9A5A-8FD3444379CA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E6B21B8B-0AF8-4BEA-B089-6A7263A9D4CE} = {E6B21B8B-0AF8-4BEA-B089-6A7263A9D4CE}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E6B21B8B-0AF8-4BEA-B089-6A7263A9D4CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6B21B8B-0AF8-4BEA-B089-6A7263A9D4CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6B21B8B-0AF8-4BEA-B089-6A7263A9D4CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6B21B8B-0AF8-4BEA-B089-6A7263A9D4CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10938016-DEE2-4A25-9A5A-8FD3444379CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10938016-DEE2-4A25-9A5A-8FD3444379CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10938016-DEE2-4A25-9A5A-8FD3444379CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B7F2AB0A-B899-4E64-A884-3D8C4288A80C}
+	EndGlobalSection
+EndGlobal

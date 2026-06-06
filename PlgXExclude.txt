@@ -1,0 +1,12 @@
+\bin\
+\obj\
+.user
+.sln
+.suo
+.pdb
+.xml
+.dll.config
+CreatePlgX.bat
+PlgXExclude.txt
+Readme.txt
+HttpsTypeSearch.plgx
