@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>HttpsTypeSearch Options</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 12px; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input[type="text"], input[type="number"], textarea { width: 100%; box-sizing: border-box; margin-top: 4px; }
+    textarea { min-height: 140px; }
+    .row { margin-top: 8px; }
+    .hint { color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h2>HttpsTypeSearch Extension Options</h2>
+
+  <label>API Endpoint (base URL)</label>
+  <input id="endpoint" type="text" placeholder="https://127.0.0.1:19456" />
+
+  <label>API Token</label>
+  <input id="token" type="text" placeholder="****** from KeePass plugin" />
+
+  <label>Search limit</label>
+  <input id="limit" type="number" min="1" max="500" />
+
+  <div class="row"><label><input id="autoSearchOnLoad" type="checkbox" /> Auto search on page load</label></div>
+  <div class="row"><label><input id="autoFillSingleResult" type="checkbox" /> Auto-fill when exactly one result matches</label></div>
+  <div class="row"><label><input id="allowOverwrite" type="checkbox" /> Allow overwriting existing input values</label></div>
+  <div class="row"><label><input id="fetchSensitiveOnDemand" type="checkbox" /> Fetch password/OTP from dedicated endpoints when not present</label></div>
+
+  <label>Native URL parameter keys (comma separated)</label>
+  <input id="nativeKeys" type="text" placeholder="hostname,host,origin,path,query,fullUrl" />
+  <div class="hint">Supported keys: scheme, host, hostname, port, path, pathname, query, origin, fullUrl.</div>
+
+  <label>Custom URL rules (JSON array)</label>
+  <textarea id="customRules" placeholder='[{"name":"tenant","mode":"query","value":"tenant"},{"name":"rootDomain","mode":"hostVariant"}]'></textarea>
+  <div class="hint">Modes: fixed/query/template/regex/hostVariant/pathSegment.</div>
+
+  <div class="row">
+    <button id="saveBtn">Save</button>
+    <span id="status"></span>
+  </div>
+
+  <script type="module" src="src/options.js"></script>
+</body>
+</html>
