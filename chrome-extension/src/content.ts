@@ -87,11 +87,12 @@ function writeValue(el: HTMLInputElement | HTMLTextAreaElement, value: string, a
 function classify(el: HTMLInputElement | HTMLTextAreaElement): 'username' | 'email' | 'password' | 'otp' | 'other' {
   const inputType = 'type' in el ? (el.type || '').toLowerCase() : '';
   const signal = clean([el.name, el.id, el.getAttribute('autocomplete') || '', el.getAttribute('aria-label') || '', el.placeholder || ''].join(' '));
+  const textLikeTypes = new Set(['text', 'search', 'tel', 'number', '']);
 
   if (inputType === 'password' || signal.includes('password') || signal.includes('passwd')) return 'password';
   if (inputType === 'email' || signal.includes('email')) return 'email';
   if (signal.includes('otp') || signal.includes('totp') || signal.includes('2fa') || signal.includes('verificationcode') || signal.includes('authcode') || signal.includes('one-time')) return 'otp';
-  if (inputType === 'text' || inputType === 'search' || inputType === 'tel' || inputType === 'number' || inputType === '') {
+  if (textLikeTypes.has(inputType)) {
     if (signal.includes('user') || signal.includes('login') || signal.includes('account') || signal.includes('identifier')) return 'username';
     if (!signal.includes('code')) return 'username';
   }

@@ -28,7 +28,7 @@ This folder contains a Manifest V3 Chrome extension that integrates with the loc
 ## Build & Test
 
 ```bash
-cd /home/runner/work/HttpsTypeSearch/HttpsTypeSearch/chrome-extension
+cd chrome-extension
 npm install
 npm run build
 npm test
@@ -41,7 +41,7 @@ npm test
 1. Open Chrome and navigate to `chrome://extensions`.
 2. Enable **Developer mode**.
 3. Click **Load unpacked**.
-4. Select `/home/runner/work/HttpsTypeSearch/HttpsTypeSearch/chrome-extension/dist`.
+4. Select `chrome-extension/dist`.
 
 ## Required KeePass API Configuration
 
