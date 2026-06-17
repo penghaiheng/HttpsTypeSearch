@@ -1,0 +1,58 @@
+name: Build C# DLL
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '**.sln'
+      - '.github/workflows/csharp-build.yml'
+  pull_request:
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '**.sln'
+      - '.github/workflows/csharp-build.yml'
+
+jobs:
+  build:
+    name: Build HttpsTypeSearch DLL
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare KeePass reference
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $keepassDir = Join-Path $env:GITHUB_WORKSPACE '..\..\KeePass BinCompat\2.42'
+          New-Item -ItemType Directory -Force -Path $keepassDir | Out-Null
+
+          $zipPath = Join-Path $env:RUNNER_TEMP 'KeePass-2.42.zip'
+          Invoke-WebRequest `
+            -Uri 'https://downloads.sourceforge.net/project/keepass/KeePass%202.x/2.42/KeePass-2.42.zip' `
+            -OutFile $zipPath
+
+          Expand-Archive -Path $zipPath -DestinationPath $keepassDir -Force
+
+          if (-not (Test-Path (Join-Path $keepassDir 'KeePass.exe'))) {
+            throw 'KeePass.exe was not found after extracting the compatibility package.'
+          }
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Release DLL
+        run: msbuild HttpsTypeSearch.csproj /m /restore /p:Configuration=Release /p:Platform=AnyCPU
+
+      - name: Upload DLL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HttpsTypeSearch-dll
+          path: bin/Release/HttpsTypeSearch.dll
+          if-no-files-found: error
