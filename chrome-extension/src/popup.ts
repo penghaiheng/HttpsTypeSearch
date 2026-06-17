@@ -70,7 +70,11 @@ function renderState(state: TabState): void {
       status(response.ok ? 'Fill request sent.' : `Fill failed: ${response.error ?? 'unknown'}`);
     });
 
-    div.append(title, meta, user, matched, btn);
+    if (matchedFields.length > 0) {
+      div.append(title, meta, user, matched, btn);
+    } else {
+      div.append(title, meta, user, btn);
+    }
     resultsEl.appendChild(div);
   }
 }
