@@ -90,7 +90,7 @@ function applyTemplate(template: string, params: NativeUrlParams): string {
   return nativeReplaced.replace(/URL(?:\((\d+)\)|（(\d+)）)/g, (_match, asciiIndex: string | undefined, fullWidthIndex: string | undefined) => {
     const rawIndex = asciiIndex ?? fullWidthIndex ?? '';
     const index = Number.parseInt(rawIndex, 10);
-    if (!Number.isInteger(index) || index < 1) {
+    if (Number.isNaN(index) || index < 1) {
       return '';
     }
     return pathSegments[index - 1] ?? '';

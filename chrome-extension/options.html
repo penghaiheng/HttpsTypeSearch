@@ -166,7 +166,7 @@
 <body>
   <main>
     <h1>HttpsTypeSearch Options</h1>
-    <p class="page-lead">Configure the local API endpoint, search behavior, and URL matching rules used by the extension. If Chrome reports <code>Failed to fetch</code> for a local HTTPS endpoint, the extension cannot bypass certificate trust checks&mdash; use a trusted certificate or switch to local HTTP.</p>
+    <p class="page-lead">Configure the local API endpoint, search behavior, and URL matching rules used by the extension. If Chrome reports <code>Failed to fetch</code> for a local HTTPS endpoint, the extension cannot bypass certificate trust checks &mdash; use a trusted certificate or switch to local HTTP.</p>
 
     <div class="grid">
       <section class="card">
@@ -206,7 +206,7 @@
 
       <label>Custom URL rules (JSON array)</label>
       <textarea id="customRules" placeholder='[{"name":"tenant","mode":"query","value":"tenant"},{"name":"siteKey","mode":"template","value":"URL(1)-URL（2）"}]'></textarea>
-      <div class="hint">Modes: fixed/query/template/regex/hostVariant/pathSegment. Template rules support <code>{{hostname}}</code> style placeholders and path placeholders like <code>URL(1)</code>, <code>URL（2）</code>, where the number is a 1-based path segment index.</div>
+      <div class="hint">Modes: fixed/query/template/regex/hostVariant/pathSegment. Template rules support <code>{{hostname}}</code> style placeholders and path placeholders like <code>URL(1)</code>, <code>URL（2）</code>. The number refers to pathname segments starting at 1.</div>
     </section>
 
     <div class="actions">

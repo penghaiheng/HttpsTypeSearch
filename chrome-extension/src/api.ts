@@ -27,7 +27,7 @@ export function validateEndpoint(baseEndpoint: string): string {
   parsed.hash = '';
   parsed.search = '';
 
-  const pathname = parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/+$/, '');
+  const pathname = parsed.pathname.replace(/\/+$/, '');
   return `${parsed.origin}${pathname}`;
 }
 
@@ -94,13 +94,14 @@ function toApiError(error: unknown, requestUrl: string): Error {
   if (error instanceof TypeError) {
     const reasons = [
       'the local API service is not running',
-      'the endpoint URL/port is incorrect',
-      'Chrome blocked the request because of host permission or network/CORS mismatch'
+      'the endpoint URL/port is incorrect'
     ];
 
     if (parsedUrl && parsedUrl.protocol === 'https:' && LOCAL_ENDPOINT_HOSTS.has(parsedUrl.hostname)) {
-      reasons.splice(2, 0, 'Chrome does not trust the local HTTPS certificate');
+      reasons.push('Chrome does not trust the local HTTPS certificate');
     }
+
+    reasons.push('Chrome blocked the request because of host permission or network/CORS mismatch');
 
     return new Error(
       `Failed to reach ${target}. Possible causes: ${reasons.join('; ')}. ` +
