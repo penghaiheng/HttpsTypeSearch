@@ -78,7 +78,7 @@ function parseKeywords(raw: string): string[] {
     if (seen.has(normalized)) continue;
 
     seen.add(normalized);
-    values.push(trimmed);
+    values.push(normalized);
   }
 
   return values;

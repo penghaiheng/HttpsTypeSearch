@@ -67,6 +67,7 @@ async function runSearch(tabId: number, url: string): Promise<TabState> {
 
   for (const term of built.terms) {
     const found = await searchByTerm(settings.endpoint, settings.token, term, settings.maxResults);
+    let termHasVisibleMatch = false;
     for (const item of found) {
       const id = String(item.Uuid || '');
       if (!id || seen.has(id)) continue;
@@ -74,8 +75,9 @@ async function runSearch(tabId: number, url: string): Promise<TabState> {
       if (matchedFields.length === 0) continue;
       seen.add(id);
       aggregated.push({ ...item, MatchedFields: matchedFields });
+      termHasVisibleMatch = true;
     }
-    if (found.length > 0) {
+    if (termHasVisibleMatch) {
       hitTerm = term;
     }
   }
