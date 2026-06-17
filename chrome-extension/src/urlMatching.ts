@@ -84,7 +84,17 @@ function evaluateCustomRule(params: NativeUrlParams, rule: CustomUrlRule): strin
 }
 
 function applyTemplate(template: string, params: NativeUrlParams): string {
-  return template.replace(/\{\{(scheme|host|hostname|port|path|pathname|query|origin|fullUrl)\}\}/g, (_m, key: NativeUrlKey) => params[key] ?? '');
+  const nativeReplaced = template.replace(/\{\{(scheme|host|hostname|port|path|pathname|query|origin|fullUrl)\}\}/g, (_m, key: NativeUrlKey) => params[key] ?? '');
+  const pathSegments = params.pathname.split('/').filter(Boolean);
+
+  return nativeReplaced.replace(/URL(?:\((\d+)\)|（(\d+)）)/g, (_match, asciiIndex: string | undefined, fullWidthIndex: string | undefined) => {
+    const rawIndex = asciiIndex ?? fullWidthIndex ?? '';
+    const index = Number.parseInt(rawIndex, 10);
+    if (!Number.isInteger(index) || index < 1) {
+      return '';
+    }
+    return pathSegments[index - 1] ?? '';
+  });
 }
 
 function toRootDomain(hostname: string): string {
