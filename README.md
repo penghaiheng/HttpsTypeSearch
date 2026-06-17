@@ -91,6 +91,13 @@ See:
 
 - README.zh-CN.md
 
+## Chrome Extension
+
+A Chrome extension implementation (Manifest V3 + TypeScript) is available in:
+
+- `chrome-extension/`
+- `chrome-extension/README.md`
+
 ## Reference
 
 This project is derived from the AutoTypeSearch codebase and keeps parts of the original search implementation while changing the product goal to an HTTPS-first KeePass plugin.

@@ -5,3 +5,5 @@ obj/
 *.suo
 *.pdb
 *.plgx
+chrome-extension/node_modules/
+chrome-extension/dist/

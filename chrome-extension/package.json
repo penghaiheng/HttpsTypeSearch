@@ -1,0 +1,22 @@
+{
+  "name": "https-type-search-extension",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc -p tsconfig.json && cp manifest.json popup.html options.html dist/",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.1.43",
+    "@types/node": "^25.9.3",
+    "typescript": "^6.0.3"
+  },
+  "private": true,
+  "type": "module"
+}
