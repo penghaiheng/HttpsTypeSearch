@@ -1,4 +1,9 @@
-import type { SearchItem } from './types.js';
+interface ContentSearchItem {
+  UserName?: string;
+  Password?: string;
+  OtpCurrent?: string;
+  CustomFields?: Record<string, unknown>;
+}
 
 chrome.runtime.sendMessage({ type: 'PAGE_LOADED', url: window.location.href }).catch(() => {
   // ignore
@@ -7,14 +12,14 @@ chrome.runtime.sendMessage({ type: 'PAGE_LOADED', url: window.location.href }).c
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type !== 'AUTOFILL_ENTRY') return;
 
-  const item = message.item as SearchItem;
+  const item = message.item as ContentSearchItem;
   const allowOverwrite = Boolean(message.allowOverwrite);
   const filled = autofill(item, allowOverwrite);
   sendResponse({ ok: true, filled });
   return true;
 });
 
-function autofill(item: SearchItem, allowOverwrite: boolean): number {
+function autofill(item: ContentSearchItem, allowOverwrite: boolean): number {
   const allInputs = Array.from(document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea'));
   const candidates = allInputs.filter(isFillable);
 
@@ -50,7 +55,7 @@ function autofill(item: SearchItem, allowOverwrite: boolean): number {
   return count;
 }
 
-function pickCustom(item: SearchItem, keys: string[]): string {
+function pickCustom(item: ContentSearchItem, keys: string[]): string {
   const custom = item.CustomFields ?? {};
   const normalized = new Map<string, string>();
   for (const [key, value] of Object.entries(custom)) {

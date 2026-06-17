@@ -18,7 +18,7 @@ test('searchByTerm surfaces helpful local HTTPS certificate guidance on fetch fa
 
     await assert.rejects(
       () => searchByTerm('https://127.0.0.1:19456', '', 'login', 5),
-      /cannot ignore HTTPS certificate errors[\s\S]*trust it in the OS\/Chrome[\s\S]*http:\/\/localhost/
+      /cannot ignore HTTPS certificate errors[\s\S]*trust it in the OS\/Chrome[\s\S]*http:\/\/localhost[\s\S]*中文提示：扩展无法忽略 HTTPS 证书错误/
     );
   } finally {
     globalThis.fetch = originalFetch;

@@ -59,6 +59,7 @@ In KeePass plugin options, make sure:
 - If Chrome shows `Failed to fetch` for a local HTTPS endpoint with a self-signed certificate, the extension cannot bypass certificate validation. Either:
   - trust the local certificate in your OS / Chrome, or
   - switch the endpoint to `http://localhost:19456` or `http://127.0.0.1:19456` for local-only use.
+  - popup/options will also show Chinese guidance: `扩展无法忽略 HTTPS 证书错误，请信任证书或改用本地 HTTP`.
 
 ## Options
 

@@ -166,7 +166,7 @@
 <body>
   <main>
     <h1>HttpsTypeSearch Options</h1>
-    <p class="page-lead">Configure the local API endpoint, search behavior, and URL matching rules used by the extension. If Chrome reports <code>Failed to fetch</code> for a local HTTPS endpoint, the extension cannot bypass certificate trust checks &mdash; use a trusted certificate or switch to local HTTP.</p>
+    <p class="page-lead">Configure the local API endpoint, search behavior, and URL matching rules used by the extension. If Chrome reports <code>Failed to fetch</code> for a local HTTPS endpoint, the extension cannot bypass certificate trust checks &mdash; use a trusted certificate or switch to local HTTP. 中文提示：浏览器扩展不能忽略证书错误，请信任证书或改用本地 HTTP。</p>
 
     <div class="grid">
       <section class="card">
@@ -175,7 +175,7 @@
 
         <label>API Endpoint (base URL)</label>
         <input id="endpoint" type="text" placeholder="https://127.0.0.1:19456" />
-        <p id="endpointHelp" class="callout">Use a local endpoint such as https://127.0.0.1:19456 or http://localhost:19456.</p>
+        <p id="endpointHelp" class="callout">Use a local endpoint such as https://127.0.0.1:19456 or http://localhost:19456. 中文提示：仅支持 localhost/127.0.0.1。</p>
 
         <label>API Token</label>
         <input id="token" type="text" placeholder="Paste the token from the KeePass plugin" />
