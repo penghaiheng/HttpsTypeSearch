@@ -77,7 +77,7 @@ async function runSearch(tabId: number, url: string): Promise<TabState> {
       aggregated.push({ ...item, MatchedFields: matchedFields });
       termHasVisibleMatch = true;
     }
-    if (termHasVisibleMatch) {
+    if (termHasVisibleMatch && !hitTerm) {
       hitTerm = term;
     }
   }
