@@ -5,10 +5,12 @@ This folder contains a Manifest V3 Chrome extension that integrates with the loc
 ## Features
 
 - URL-based search against local API endpoint (`/search?term=...`).
-- Native URL parameter matching:
-  - `scheme`, `host`, `hostname`, `port`, `path`/`pathname`, `query`, `origin`, `fullUrl`.
-- Custom URL rules (JSON in options), including:
-  - `fixed`, `query`, `template`, `regex`, `hostVariant`, `pathSegment`.
+- `term` is extracted from current tab URL using browser URL parsing:
+  - `hostname` or
+  - `hostname:port` (only when URL has explicit port and option is enabled).
+- Supports filtering display keys:
+  - optional default top-level `URL` key,
+  - fuzzy matching on `CustomFields` child key names by keywords.
 - Autofill for common username/password/email/OTP inputs.
 - Safer autofill behavior:
   - only fill visible/editable fields,
@@ -21,9 +23,11 @@ This folder contains a Manifest V3 Chrome extension that integrates with the loc
 - `src/content.ts`: field detection and autofill execution in page context.
 - `src/popup.ts` + `popup.html`: run search and select candidate result to fill.
 - `src/options.ts` + `options.html`: extension configuration UI.
-- `src/urlMatching.ts`: pure URL parsing and matching term generation logic.
+- `src/urlMatching.ts`: URL parsing and term generation logic.
+- `src/resultMatching.ts`: matching/filtering API result fields for display.
 - `src/api.ts`: local API client.
-- `test/urlMatching.test.ts`: focused tests for URL parsing/matching.
+- `test/urlMatching.test.ts`: tests for URL parsing/term extraction.
+- `test/resultMatching.test.ts`: tests for key matching behavior.
 
 ## Build & Test
 
@@ -56,29 +60,11 @@ In KeePass plugin options, make sure:
   - trust the local certificate in your OS / Chrome, or
   - switch the endpoint to `http://localhost:19456` or `http://127.0.0.1:19456` for local-only use.
 
-## URL Matching and Custom Rules
+## Options
 
-In extension options:
-
-- **Native URL keys**: comma-separated keys used directly as search terms.
-- **Custom URL rules**: JSON array.
-
-Example:
-
-```json
-[
-  { "name": "tenant", "mode": "query", "value": "tenant" },
-  { "name": "rootDomain", "mode": "hostVariant" },
-  { "name": "sitePath", "mode": "template", "value": "{{origin}}/URL(1)/URL（2）" },
-  { "name": "env", "mode": "regex", "source": "hostname", "pattern": "^(dev|test|prod)\\." }
-]
-```
-
-Template rules support both:
-
-- native placeholders like `{{hostname}}`, `{{origin}}`, `{{pathname}}`
-- indexed path placeholders like `URL(1)`, `URL（2）`, `URL(3)` ...
-
-`URL(n)` / `URL（n）` use a 1-based pathname segment index and only accept integer digits inside the brackets.
-
-If any native/custom term returns search results, it is treated as a match.
+- **Term source**:
+  - `hostname`
+  - `hostname:port` (falls back to `hostname` when URL has no explicit port)
+- **Match default `URL` key**: toggle on/off.
+- **CustomFields key keywords**: one per line or comma-separated;
+  matching is case-insensitive fuzzy contains on key name.

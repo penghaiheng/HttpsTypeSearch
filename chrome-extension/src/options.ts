@@ -1,6 +1,5 @@
 import { getEndpointGuidance, validateEndpoint } from './api.js';
 import { DEFAULT_SETTINGS, getSettings, setSettings } from './settings.js';
-import type { CustomUrlRule } from './types.js';
 
 const endpointEl = required<HTMLInputElement>('#endpoint');
 const endpointHelpEl = required<HTMLParagraphElement>('#endpointHelp');
@@ -10,8 +9,9 @@ const autoSearchOnLoadEl = required<HTMLInputElement>('#autoSearchOnLoad');
 const autoFillSingleResultEl = required<HTMLInputElement>('#autoFillSingleResult');
 const allowOverwriteEl = required<HTMLInputElement>('#allowOverwrite');
 const fetchSensitiveOnDemandEl = required<HTMLInputElement>('#fetchSensitiveOnDemand');
-const nativeKeysEl = required<HTMLInputElement>('#nativeKeys');
-const customRulesEl = required<HTMLTextAreaElement>('#customRules');
+const termSourceEl = required<HTMLSelectElement>('#termSource');
+const matchDefaultUrlEl = required<HTMLInputElement>('#matchDefaultUrl');
+const customFieldKeywordsEl = required<HTMLTextAreaElement>('#customFieldKeywords');
 const saveBtn = required<HTMLButtonElement>('#saveBtn');
 const statusEl = required<HTMLSpanElement>('#status');
 
@@ -34,19 +34,14 @@ async function load(): Promise<void> {
   autoFillSingleResultEl.checked = settings.autoFillSingleResult;
   allowOverwriteEl.checked = settings.allowOverwrite;
   fetchSensitiveOnDemandEl.checked = settings.fetchSensitiveOnDemand;
-  nativeKeysEl.value = settings.nativeUrlKeys.join(',');
-  customRulesEl.value = JSON.stringify(settings.customUrlRules, null, 2);
+  termSourceEl.value = settings.termSource;
+  matchDefaultUrlEl.checked = settings.matchDefaultUrl;
+  customFieldKeywordsEl.value = settings.customFieldKeywords.join('\n');
   renderEndpointGuidance(settings.endpoint);
 }
 
 async function save(): Promise<void> {
   try {
-    const customRules = parseCustomRules(customRulesEl.value);
-    const nativeKeys = nativeKeysEl.value
-      .split(',')
-      .map((v) => v.trim())
-      .filter(Boolean);
-
     const maxResults = Math.max(1, Math.min(500, Number.parseInt(limitEl.value || String(DEFAULT_SETTINGS.maxResults), 10) || DEFAULT_SETTINGS.maxResults));
     const endpoint = validateEndpoint(endpointEl.value || DEFAULT_SETTINGS.endpoint);
 
@@ -58,9 +53,9 @@ async function save(): Promise<void> {
       autoFillSingleResult: autoFillSingleResultEl.checked,
       allowOverwrite: allowOverwriteEl.checked,
       fetchSensitiveOnDemand: fetchSensitiveOnDemandEl.checked,
-      nativeUrlKeys: nativeKeys as typeof DEFAULT_SETTINGS.nativeUrlKeys,
-      customUrlRules: customRules,
-      stopOnFirstHit: true
+      termSource: termSourceEl.value === 'hostnameWithPort' ? 'hostnameWithPort' : 'hostname',
+      matchDefaultUrl: matchDefaultUrlEl.checked,
+      customFieldKeywords: parseKeywords(customFieldKeywordsEl.value)
     });
 
     endpointEl.value = endpoint;
@@ -71,32 +66,22 @@ async function save(): Promise<void> {
   }
 }
 
-function parseCustomRules(raw: string): CustomUrlRule[] {
-  if (!raw.trim()) return [];
-  const parsed = JSON.parse(raw) as unknown;
-  if (!Array.isArray(parsed)) {
-    throw new Error('Custom rules must be a JSON array.');
+function parseKeywords(raw: string): string[] {
+  const seen = new Set<string>();
+  const values: string[] = [];
+
+  for (const token of raw.split(/[\n,]/g)) {
+    const trimmed = token.trim();
+    if (!trimmed) continue;
+
+    const normalized = trimmed.toLowerCase();
+    if (seen.has(normalized)) continue;
+
+    seen.add(normalized);
+    values.push(trimmed);
   }
 
-  return parsed.map((item, index) => {
-    if (!item || typeof item !== 'object') {
-      throw new Error(`Rule ${index} must be an object.`);
-    }
-    const obj = item as Record<string, unknown>;
-    const name = String(obj.name ?? '').trim();
-    const mode = String(obj.mode ?? '').trim();
-    if (!name) throw new Error(`Rule ${index} missing name.`);
-    if (!mode) throw new Error(`Rule ${index} missing mode.`);
-    return {
-      name,
-      mode: mode as CustomUrlRule['mode'],
-      value: typeof obj.value === 'string' ? obj.value : undefined,
-      source: typeof obj.source === 'string' ? obj.source as CustomUrlRule['source'] : undefined,
-      pattern: typeof obj.pattern === 'string' ? obj.pattern : undefined,
-      flags: typeof obj.flags === 'string' ? obj.flags : undefined,
-      group: typeof obj.group === 'number' ? obj.group : undefined
-    };
-  });
+  return values;
 }
 
 function setStatus(text: string, isError: boolean): void {

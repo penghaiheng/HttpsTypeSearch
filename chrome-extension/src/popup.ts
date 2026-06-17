@@ -32,7 +32,7 @@ async function initialize(): Promise<void> {
 function renderState(state: TabState): void {
   if (state.results.length === 0) {
     const termsText = state.terms.length > 0 ? `Searched ${state.terms.length} terms.` : 'No valid URL terms.';
-    status(`No match. ${termsText}`);
+    status(state.lastError ? `${state.lastError} ${termsText}` : `No match. ${termsText}`);
     resultsEl.innerHTML = '';
     return;
   }
@@ -56,6 +56,11 @@ function renderState(state: TabState): void {
     user.className = 'meta';
     user.textContent = `User: ${String(item.UserName || '')}`;
 
+    const matched = document.createElement('div');
+    matched.className = 'meta';
+    const matchedFields = Array.isArray(item.MatchedFields) ? item.MatchedFields : [];
+    matched.textContent = matchedFields.map((field) => `${field.key}: ${field.value}`).join(' | ');
+
     const btn = document.createElement('button');
     btn.textContent = 'Fill this';
     btn.addEventListener('click', async () => {
@@ -65,7 +70,7 @@ function renderState(state: TabState): void {
       status(response.ok ? 'Fill request sent.' : `Fill failed: ${response.error ?? 'unknown'}`);
     });
 
-    div.append(title, meta, user, btn);
+    div.append(title, meta, user, matched, btn);
     resultsEl.appendChild(div);
   }
 }

@@ -8,14 +8,22 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   autoFillSingleResult: true,
   allowOverwrite: false,
   fetchSensitiveOnDemand: false,
-  nativeUrlKeys: ['hostname', 'host', 'origin', 'path', 'query', 'fullUrl'],
-  customUrlRules: [],
-  stopOnFirstHit: true
+  termSource: 'hostname',
+  matchDefaultUrl: true,
+  customFieldKeywords: ['URL']
 };
 
 export async function getSettings(): Promise<ExtensionSettings> {
   const data = await chrome.storage.sync.get('settings');
-  return { ...DEFAULT_SETTINGS, ...(data.settings ?? {}) } as ExtensionSettings;
+  const merged = { ...DEFAULT_SETTINGS, ...(data.settings ?? {}) } as ExtensionSettings;
+  return {
+    ...merged,
+    termSource: merged.termSource === 'hostnameWithPort' ? 'hostnameWithPort' : 'hostname',
+    matchDefaultUrl: Boolean(merged.matchDefaultUrl),
+    customFieldKeywords: Array.isArray(merged.customFieldKeywords)
+      ? merged.customFieldKeywords.map((value) => String(value ?? '').trim()).filter(Boolean)
+      : DEFAULT_SETTINGS.customFieldKeywords
+  };
 }
 
 export async function setSettings(settings: ExtensionSettings): Promise<void> {
