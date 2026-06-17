@@ -1,0 +1,52 @@
+name: Package Chrome Extension
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'chrome-extension/**'
+      - '.github/workflows/chrome-extension-package.yml'
+  pull_request:
+    paths:
+      - 'chrome-extension/**'
+      - '.github/workflows/chrome-extension-package.yml'
+
+jobs:
+  package:
+    name: Build and package chrome extension
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: chrome-extension
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: chrome-extension/package-lock.json
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Type check
+        run: make typecheck
+
+      - name: Run tests
+        run: make test
+
+      - name: Package extension
+        run: make package
+
+      - name: Upload packaged extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: HttpsTypeSearch-chrome-extension
+          path: chrome-extension/release/*.zip
+          if-no-files-found: error
