@@ -12,10 +12,12 @@ This folder contains a Manifest V3 Chrome extension that integrates with the loc
   - optional default top-level `URL` key,
   - fuzzy matching on `CustomFields` child key names by keywords.
 - Autofill for common username/password/email/OTP inputs.
+- Injects content scripts into iframe / `about:blank` iframe contexts for nested login forms.
 - Safer autofill behavior:
   - only fill visible/editable fields,
   - skip overwriting existing values unless enabled,
   - support single-result auto-fill and multi-result manual selection in popup.
+- Automatically refreshes search state when fillable fields receive focus, click, typing, or DOM-driven activation.
 
 ## Project Structure
 

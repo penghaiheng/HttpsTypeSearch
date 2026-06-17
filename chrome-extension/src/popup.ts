@@ -4,6 +4,8 @@ const statusEl = required<HTMLParagraphElement>('#status');
 const resultsEl = required<HTMLDivElement>('#results');
 const searchBtn = required<HTMLButtonElement>('#searchBtn');
 
+let activeTabId: number | null = null;
+
 void initialize();
 
 async function initialize(): Promise<void> {
@@ -13,20 +15,36 @@ async function initialize(): Promise<void> {
     return;
   }
 
-  const current = await sendMessage<{ ok: boolean; state: TabState | null }>({ type: 'GET_TAB_STATE', tabId: tab.id });
+  const tabId = tab.id;
+  const tabUrl = tab.url;
+  activeTabId = tabId;
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message?.type !== 'TAB_STATE_UPDATED') return;
+    if (Number(message.tabId) !== activeTabId) return;
+    if (!message.state) return;
+    renderState(message.state as TabState);
+  });
+
+  const current = await sendMessage<{ ok: boolean; state: TabState | null }>({ type: 'GET_TAB_STATE', tabId });
   if (current.ok && current.state) {
     renderState(current.state);
+  } else {
+    await refreshState(tabId, tabUrl);
   }
 
   searchBtn.addEventListener('click', async () => {
-    status('Searching...');
-    const response = await sendMessage<{ ok: boolean; state?: TabState; error?: string }>({ type: 'RUN_SEARCH', tabId: tab.id, url: tab.url });
-    if (!response.ok || !response.state) {
-      status(presentError(response.error ?? 'Search failed.'));
-      return;
-    }
-    renderState(response.state);
+    await refreshState(tabId, tabUrl);
   });
+}
+
+async function refreshState(tabId: number, url: string): Promise<void> {
+  status('Searching...');
+  const response = await sendMessage<{ ok: boolean; state?: TabState; error?: string }>({ type: 'RUN_SEARCH', tabId, url });
+  if (!response.ok || !response.state) {
+    status(presentError(response.error ?? 'Search failed.'));
+    return;
+  }
+  renderState(response.state);
 }
 
 function renderState(state: TabState): void {

@@ -5,9 +5,21 @@ interface ContentSearchItem {
   CustomFields?: Record<string, unknown>;
 }
 
+type FillableElement = HTMLInputElement | HTMLTextAreaElement | HTMLElement;
+
+const INTERACTION_DEBOUNCE_MS = 180;
+const INTERACTION_SUPPRESS_MS = 600;
+
+let pendingInteractionTimer: number | undefined;
+let lastActivatedElement: FillableElement | null = null;
+let lastActivatedAt = 0;
+let suppressInteractionUntil = 0;
+
 chrome.runtime.sendMessage({ type: 'PAGE_LOADED', url: window.location.href }).catch(() => {
   // ignore
 });
+
+bindAutomaticDetection();
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type !== 'AUTOFILL_ENTRY') return;
@@ -20,8 +32,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 function autofill(item: ContentSearchItem, allowOverwrite: boolean): number {
-  const allInputs = Array.from(document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea'));
-  const candidates = allInputs.filter(isFillable);
+  const candidates = collectFillableElements();
 
   const usernameValue = pickString(item.UserName, pickCustom(item, ['username', 'user', 'login', 'email']));
   const emailValue = pickCustom(item, ['email', 'mail', 'e-mail']);
@@ -78,20 +89,29 @@ function pickString(...values: Array<string | undefined>): string {
   return '';
 }
 
-function writeValue(el: HTMLInputElement | HTMLTextAreaElement, value: string, allowOverwrite: boolean): boolean {
-  if (!allowOverwrite && el.value.trim().length > 0) return false;
-  if (el.value === value) return false;
+function writeValue(el: FillableElement, value: string, allowOverwrite: boolean): boolean {
+  const currentValue = readValue(el);
+  if (!allowOverwrite && currentValue.trim().length > 0) return false;
+  if (currentValue === value) return false;
 
+  suppressInteractionUntil = Date.now() + INTERACTION_SUPPRESS_MS;
   el.focus();
-  el.value = value;
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    el.value = value;
+  } else {
+    el.textContent = value;
+  }
   el.dispatchEvent(new Event('input', { bubbles: true }));
   el.dispatchEvent(new Event('change', { bubbles: true }));
   return true;
 }
 
-function classify(el: HTMLInputElement | HTMLTextAreaElement): 'username' | 'email' | 'password' | 'otp' | 'other' {
-  const inputType = 'type' in el ? (el.type || '').toLowerCase() : '';
-  const signal = clean([el.name, el.id, el.getAttribute('autocomplete') || '', el.getAttribute('aria-label') || '', el.placeholder || ''].join(' '));
+function classify(el: FillableElement): 'username' | 'email' | 'password' | 'otp' | 'other' {
+  const inputType = el instanceof HTMLInputElement ? (el.type || '').toLowerCase() : '';
+  const textualHints = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement
+    ? [el.name, el.placeholder || '']
+    : [];
+  const signal = clean([el.id, el.getAttribute('autocomplete') || '', el.getAttribute('aria-label') || '', ...textualHints].join(' '));
   const textLikeTypes = new Set(['text', 'search', 'tel', 'number', '']);
 
   if (inputType === 'password' || signal.includes('password') || signal.includes('passwd')) return 'password';
@@ -108,12 +128,102 @@ function clean(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
 
-function isFillable(el: HTMLInputElement | HTMLTextAreaElement): boolean {
-  if (el.disabled || el.readOnly) return false;
+function isFillable(el: FillableElement): boolean {
   if (!(el instanceof HTMLElement)) return false;
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    if (el.disabled || el.readOnly) return false;
+  } else if (!el.isContentEditable) {
+    return false;
+  }
   const style = window.getComputedStyle(el);
   if (style.display === 'none' || style.visibility === 'hidden') return false;
   const rect = el.getBoundingClientRect();
   if (rect.width <= 0 || rect.height <= 0) return false;
   return true;
+}
+
+function bindAutomaticDetection(): void {
+  const trigger = (target: EventTarget | null, delay = 0): void => {
+    const candidate = resolveFillableTarget(target);
+    if (!candidate) return;
+    scheduleFieldActivation(candidate, delay);
+  };
+
+  document.addEventListener('focusin', (event) => {
+    trigger(event.target);
+  });
+
+  document.addEventListener('click', (event) => {
+    trigger(event.target);
+  });
+
+  document.addEventListener('input', (event) => {
+    trigger(event.target, INTERACTION_DEBOUNCE_MS);
+  });
+
+  document.addEventListener('keydown', () => {
+    trigger(document.activeElement, INTERACTION_DEBOUNCE_MS);
+  });
+
+  const observer = new MutationObserver(() => {
+    trigger(document.activeElement, INTERACTION_DEBOUNCE_MS);
+  });
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class', 'style', 'hidden', 'readonly', 'disabled', 'contenteditable']
+  });
+}
+
+function scheduleFieldActivation(target: FillableElement, delay: number): void {
+  if (pendingInteractionTimer) {
+    window.clearTimeout(pendingInteractionTimer);
+  }
+  pendingInteractionTimer = window.setTimeout(() => {
+    pendingInteractionTimer = undefined;
+    void activateField(target);
+  }, delay);
+}
+
+async function activateField(target: FillableElement): Promise<void> {
+  if (Date.now() < suppressInteractionUntil) return;
+  if (!isFillable(target)) return;
+
+  const activeTarget = resolveFillableTarget(document.activeElement);
+  if (!activeTarget || activeTarget !== target) return;
+
+  const now = Date.now();
+  if (lastActivatedElement === target && now - lastActivatedAt < INTERACTION_DEBOUNCE_MS) return;
+
+  lastActivatedElement = target;
+  lastActivatedAt = now;
+
+  await chrome.runtime.sendMessage({
+    type: 'FIELD_INTERACTION',
+    url: window.location.href
+  }).catch(() => {
+    // ignore
+  });
+}
+
+function resolveFillableTarget(target: EventTarget | null): FillableElement | null {
+  if (!(target instanceof Element)) return null;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return target;
+  const editableHost = target.closest<HTMLElement>('[contenteditable]');
+  if (editableHost?.isContentEditable) return editableHost;
+  return null;
+}
+
+function collectFillableElements(): FillableElement[] {
+  const directInputs = Array.from(document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea'));
+  const editableHosts = Array.from(document.querySelectorAll<HTMLElement>('[contenteditable]')).filter((el) => el.isContentEditable);
+  return [...directInputs, ...editableHosts].filter(isFillable);
+}
+
+function readValue(el: FillableElement): string {
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    return el.value;
+  }
+  return el.textContent ?? '';
 }
