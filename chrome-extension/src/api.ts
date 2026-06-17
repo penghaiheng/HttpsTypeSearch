@@ -35,16 +35,16 @@ export function getEndpointGuidance(baseEndpoint: string): string {
   try {
     const parsed = new URL(baseEndpoint.trim());
     if (parsed.protocol === 'https:' && LOCAL_ENDPOINT_HOSTS.has(parsed.hostname)) {
-      return 'Using HTTPS on localhost requires a certificate trusted by Chrome/your OS. The extension cannot ignore self-signed certificate errors. Trust the certificate or switch to http://localhost / http://127.0.0.1.';
+      return 'Using HTTPS on localhost requires a certificate trusted by Chrome/your OS. The extension cannot ignore self-signed certificate errors. Trust the certificate or switch to http://localhost / http://127.0.0.1. 中文提示：扩展无法忽略 HTTPS 证书错误；请先信任证书，或改用本地 http 地址。';
     }
     if (parsed.protocol === 'http:' && LOCAL_ENDPOINT_HOSTS.has(parsed.hostname)) {
-      return 'HTTP on localhost avoids certificate trust problems. Only use it for a local machine service that you trust.';
+      return 'HTTP on localhost avoids certificate trust problems. Only use it for a local machine service that you trust. 中文提示：HTTP 可绕过证书问题，但仅建议本机可信服务使用。';
     }
   } catch {
     // Fall through to the generic guidance below.
   }
 
-  return 'Use a local endpoint such as https://127.0.0.1:19456 or http://localhost:19456. Non-local hosts are not allowed by this extension manifest.';
+  return 'Use a local endpoint such as https://127.0.0.1:19456 or http://localhost:19456. Non-local hosts are not allowed by this extension manifest. 中文提示：请使用 localhost/127.0.0.1，本扩展不支持非本机地址。';
 }
 
 function buildAuthHeaders(token: string): Headers {
@@ -105,7 +105,8 @@ function toApiError(error: unknown, requestUrl: string): Error {
 
     return new Error(
       `Failed to reach ${target}. Possible causes: ${reasons.join('; ')}. ` +
-      'Chrome extensions cannot ignore HTTPS certificate errors. If you use a self-signed local certificate, trust it in the OS/Chrome, or switch the endpoint to http://localhost / http://127.0.0.1.'
+      'Chrome extensions cannot ignore HTTPS certificate errors. If you use a self-signed local certificate, trust it in the OS/Chrome, or switch the endpoint to http://localhost / http://127.0.0.1. ' +
+      '中文提示：扩展无法忽略 HTTPS 证书错误。请先在系统/Chrome 信任证书，或改用 http://localhost / http://127.0.0.1。'
     );
   }
 

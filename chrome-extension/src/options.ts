@@ -60,7 +60,7 @@ async function save(): Promise<void> {
 
     endpointEl.value = endpoint;
     renderEndpointGuidance(endpoint);
-    setStatus('Saved. If HTTPS still shows "Failed to fetch", trust the local certificate or switch to http://localhost / http://127.0.0.1.', false);
+    setStatus('Saved. If HTTPS still shows "Failed to fetch", trust the local certificate or switch to http://localhost / http://127.0.0.1. 中文提示：若证书报错，请先信任证书或改用本地 http 地址。', false);
   } catch (error) {
     setStatus(error instanceof Error ? error.message : 'Save failed.', true);
   }

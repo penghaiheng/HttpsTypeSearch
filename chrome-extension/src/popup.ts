@@ -22,7 +22,7 @@ async function initialize(): Promise<void> {
     status('Searching...');
     const response = await sendMessage<{ ok: boolean; state?: TabState; error?: string }>({ type: 'RUN_SEARCH', tabId: tab.id, url: tab.url });
     if (!response.ok || !response.state) {
-      status(response.error ?? 'Search failed.');
+      status(presentError(response.error ?? 'Search failed.'));
       return;
     }
     renderState(response.state);
@@ -32,7 +32,7 @@ async function initialize(): Promise<void> {
 function renderState(state: TabState): void {
   if (state.results.length === 0) {
     const termsText = state.terms.length > 0 ? `Searched ${state.terms.length} terms.` : 'No valid URL terms.';
-    status(state.lastError ? `${state.lastError} ${termsText}` : `No match. ${termsText}`);
+    status(state.lastError ? `${presentError(state.lastError)} ${termsText}` : `No match. ${termsText}`);
     resultsEl.innerHTML = '';
     return;
   }
@@ -90,6 +90,21 @@ async function sendMessage<T>(message: unknown): Promise<T> {
 
 function status(text: string): void {
   statusEl.textContent = text;
+}
+
+function presentError(rawError: string): string {
+  const text = String(rawError || '').trim();
+  const signal = text.toLowerCase();
+  const isCertificateOrFetchError = signal.includes('failed to fetch')
+    || signal.includes('failed to reach')
+    || signal.includes('certificate')
+    || signal.includes('err_cert');
+
+  if (!isCertificateOrFetchError) {
+    return text;
+  }
+
+  return `请求失败：可能是本地 HTTPS 证书不受信任（浏览器扩展无法忽略证书错误）。请信任证书，或改用 http://localhost / http://127.0.0.1。${text ? ` 原始错误：${text}` : ''}`;
 }
 
 function required<T extends Element>(selector: string): T {
