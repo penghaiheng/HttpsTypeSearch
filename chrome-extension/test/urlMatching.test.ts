@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DEFAULT_SETTINGS } from '../src/settings.js';
 import type { ExtensionSettings } from '../src/types.js';
-import { buildSearchTerms, parseNativeUrlParams } from '../src/urlMatching.js';
+import { buildSearchTerms, extractSearchTerm, parseNativeUrlParams } from '../src/urlMatching.js';
 
 test('parseNativeUrlParams extracts key URL parts', () => {
   const parsed = parseNativeUrlParams('https://sub.example.com:8443/path/a?tenant=t1&x=1');
@@ -14,39 +14,29 @@ test('parseNativeUrlParams extracts key URL parts', () => {
   assert.equal(parsed?.query, 'tenant=t1&x=1');
 });
 
-test('buildSearchTerms includes native and custom terms', () => {
-  const settings: ExtensionSettings = {
-    ...DEFAULT_SETTINGS,
-    nativeUrlKeys: ['hostname', 'path'],
-    customUrlRules: [
-      { name: 'tenant', mode: 'query', value: 'tenant' },
-      { name: 'root', mode: 'hostVariant' },
-      { name: 'prefix', mode: 'template', value: '{{scheme}}://{{hostname}}' },
-      { name: 'captured', mode: 'regex', source: 'fullUrl', pattern: 'tenant=(\\w+)', group: 1 }
-    ]
-  };
-
-  const result = buildSearchTerms('https://foo.bar.example.com/login?tenant=acme', settings);
-  assert.equal(result.native.hostname, 'foo.bar.example.com');
-  assert.equal(result.custom.tenant, 'acme');
-  assert.equal(result.custom.root, 'example.com');
-  assert.equal(result.custom.prefix, 'https://foo.bar.example.com');
-  assert.ok(result.terms.includes('acme'));
-  assert.ok(result.terms.includes('/login'));
+test('extractSearchTerm returns hostname only', () => {
+  const term = extractSearchTerm('https://qq.com:1234/path?a=1#hash', false);
+  assert.equal(term.term, 'qq.com');
 });
 
-test('template rules support URL(n) and URL（n） path placeholders', () => {
-  const settings: ExtensionSettings = {
-    ...DEFAULT_SETTINGS,
-    nativeUrlKeys: [],
-    customUrlRules: [
-      { name: 'firstSegment', mode: 'template', value: 'URL(1)' },
-      { name: 'combined', mode: 'template', value: 'URL(1)-URL（2）' }
-    ]
-  };
+test('extractSearchTerm returns hostname:port when enabled', () => {
+  const term = extractSearchTerm('https://qq.com:1234/path?a=1#hash', true);
+  assert.equal(term.term, 'qq.com:1234');
+});
 
-  const result = buildSearchTerms('https://example.com/team/admin/login', settings);
-  assert.equal(result.custom.firstSegment, 'team');
-  assert.equal(result.custom.combined, 'team-admin');
-  assert.deepEqual(result.terms, ['team', 'team-admin']);
+test('extractSearchTerm keeps hostname when URL has no explicit port', () => {
+  const term = extractSearchTerm('https://qq.com/path?a=1#hash', true);
+  assert.equal(term.term, 'qq.com');
+});
+
+test('buildSearchTerms ignores path/query/hash', () => {
+  const settings: ExtensionSettings = { ...DEFAULT_SETTINGS, termSource: 'hostnameWithPort' };
+  const result = buildSearchTerms('https://example.com:9443/team/admin/login?tenant=acme#top', settings);
+  assert.deepEqual(result.terms, ['example.com:9443']);
+});
+
+test('buildSearchTerms returns error for unsupported scheme', () => {
+  const result = buildSearchTerms('chrome://settings', DEFAULT_SETTINGS);
+  assert.deepEqual(result.terms, []);
+  assert.match(result.error ?? '', /Unsupported URL scheme/);
 });

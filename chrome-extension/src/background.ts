@@ -1,4 +1,5 @@
 import { fetchOtp, fetchPassword, searchByTerm } from './api.js';
+import { collectMatchedFields } from './resultMatching.js';
 import { getSettings } from './settings.js';
 import type { SearchItem, TabState } from './types.js';
 import { buildSearchTerms } from './urlMatching.js';
@@ -62,18 +63,22 @@ async function runSearch(tabId: number, url: string): Promise<TabState> {
   const aggregated: SearchItem[] = [];
   const seen = new Set<string>();
   let hitTerm: string | undefined;
+  let lastError = built.error;
 
   for (const term of built.terms) {
     const found = await searchByTerm(settings.endpoint, settings.token, term, settings.maxResults);
+    let termHasVisibleMatch = false;
     for (const item of found) {
       const id = String(item.Uuid || '');
       if (!id || seen.has(id)) continue;
+      const matchedFields = collectMatchedFields(item, settings);
+      if (matchedFields.length === 0) continue;
       seen.add(id);
-      aggregated.push(item);
+      aggregated.push({ ...item, MatchedFields: matchedFields });
+      termHasVisibleMatch = true;
     }
-    if (found.length > 0) {
+    if (termHasVisibleMatch && !hitTerm) {
       hitTerm = term;
-      if (settings.stopOnFirstHit) break;
     }
   }
 
@@ -83,6 +88,7 @@ async function runSearch(tabId: number, url: string): Promise<TabState> {
     terms: built.terms,
     lastMatchTerm: hitTerm,
     results: aggregated,
+    lastError,
     updatedAt: Date.now()
   };
   stateByTab.set(tabId, tabState);

@@ -1,4 +1,4 @@
-import type { CustomUrlRule, ExtensionSettings, NativeUrlKey, NativeUrlParams } from './types.js';
+import type { ExtensionSettings, NativeUrlParams } from './types.js';
 
 export function parseNativeUrlParams(rawUrl: string): NativeUrlParams | null {
   try {
@@ -19,107 +19,47 @@ export function parseNativeUrlParams(rawUrl: string): NativeUrlParams | null {
   }
 }
 
-export function buildSearchTerms(rawUrl: string, settings: ExtensionSettings): { terms: string[]; native: Record<string, string>; custom: Record<string, string> } {
+export function buildSearchTerms(rawUrl: string, settings: ExtensionSettings): { terms: string[]; native: Record<string, string>; custom: Record<string, string>; error?: string } {
+  const extracted = extractSearchTerm(rawUrl, settings.termSource === 'hostnameWithPort');
+  if (!extracted.term) {
+    return { terms: [], native: {}, custom: {}, error: extracted.error };
+  }
+
+  return {
+    terms: [extracted.term],
+    native: { hostname: extracted.hostname, host: extracted.host },
+    custom: {}
+  };
+}
+
+export function extractSearchTerm(rawUrl: string, includePort: boolean): { term: string; hostname: string; host: string; error?: undefined } | { term?: undefined; hostname?: undefined; host?: undefined; error: string } {
+  if (!rawUrl || !rawUrl.trim()) {
+    return { error: 'Current tab URL is empty.' };
+  }
+
   const nativeParams = parseNativeUrlParams(rawUrl);
-  if (!nativeParams) return { terms: [], native: {}, custom: {} };
-
-  const nativeValues: Record<string, string> = {};
-  for (const key of settings.nativeUrlKeys) {
-    const value = nativeParams[key];
-    if (value && value.trim().length > 0) {
-      nativeValues[key] = value.trim();
-    }
+  if (!nativeParams) {
+    return { error: 'Current tab URL cannot be parsed.' };
   }
 
-  const customValues: Record<string, string> = {};
-  for (const rule of settings.customUrlRules) {
-    const value = evaluateCustomRule(nativeParams, rule);
-    if (value && value.trim().length > 0) {
-      customValues[rule.name] = value.trim();
-    }
+  if (!/^https?$/i.test(nativeParams.scheme)) {
+    return { error: `Unsupported URL scheme: ${nativeParams.scheme}.` };
   }
 
-  const terms = dedupeTerms([...Object.values(nativeValues), ...Object.values(customValues)]);
-  return { terms, native: nativeValues, custom: customValues };
-}
-
-function evaluateCustomRule(params: NativeUrlParams, rule: CustomUrlRule): string {
-  switch (rule.mode) {
-    case 'fixed':
-      return rule.value ?? '';
-    case 'query': {
-      const key = (rule.value ?? rule.name).trim();
-      if (!key) return '';
-      const searchParams = new URLSearchParams(params.query);
-      return searchParams.get(key) ?? '';
-    }
-    case 'template':
-      return applyTemplate(rule.value ?? '', params);
-    case 'hostVariant':
-      return toRootDomain(params.hostname);
-    case 'pathSegment': {
-      const segments = params.pathname.split('/').filter(Boolean);
-      const idx = Number.parseInt(rule.value ?? '0', 10);
-      if (!Number.isInteger(idx) || idx < 0 || idx >= segments.length) return '';
-      return segments[idx];
-    }
-    case 'regex': {
-      const sourceKey: NativeUrlKey = rule.source ?? 'fullUrl';
-      const sourceValue = params[sourceKey] ?? '';
-      const pattern = rule.pattern ?? '';
-      if (!pattern) return '';
-      try {
-        const regex = new RegExp(pattern, rule.flags ?? '');
-        const match = sourceValue.match(regex);
-        if (!match) return '';
-        const group = typeof rule.group === 'number' ? rule.group : 1;
-        return match[group] ?? match[0] ?? '';
-      } catch {
-        return '';
-      }
-    }
-    default:
-      return '';
+  if (!nativeParams.hostname) {
+    return { error: 'Current tab URL has no hostname.' };
   }
-}
 
-function applyTemplate(template: string, params: NativeUrlParams): string {
-  const nativeReplaced = template.replace(/\{\{(scheme|host|hostname|port|path|pathname|query|origin|fullUrl)\}\}/g, (_m, key: NativeUrlKey) => params[key] ?? '');
-  const pathSegments = params.pathname.split('/').filter(Boolean);
-
-  return nativeReplaced.replace(/URL(?:\((\d+)\)|（(\d+)）)/g, (_match, asciiIndex: string | undefined, fullWidthIndex: string | undefined) => {
-    const rawIndex = asciiIndex ?? fullWidthIndex ?? '';
-    const index = Number.parseInt(rawIndex, 10);
-    if (Number.isNaN(index) || index < 1) {
-      return '';
-    }
-    return pathSegments[index - 1] ?? '';
-  });
-}
-
-function toRootDomain(hostname: string): string {
-  const parts = hostname.split('.').filter(Boolean);
-  if (parts.length <= 2) return hostname;
-  return parts.slice(-2).join('.');
-}
-
-function dedupeTerms(values: string[]): string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const value of values) {
-    const normalized = normalizeTerm(value);
-    if (!normalized) continue;
-    if (!seen.has(normalized)) {
-      seen.add(normalized);
-      result.push(normalized);
-    }
+  const hostname = nativeParams.hostname.trim();
+  const host = nativeParams.host.trim();
+  if (!hostname) {
+    return { error: 'Current tab URL has no hostname.' };
   }
-  return result;
-}
 
-function normalizeTerm(value: string): string {
-  const trimmed = value.trim();
-  if (!trimmed) return '';
-  if (trimmed.length === 1) return '';
-  return trimmed;
+  const term = includePort && nativeParams.port ? host : hostname;
+  if (!term) {
+    return { error: 'Cannot derive search term from current URL.' };
+  }
+
+  return { term, hostname, host };
 }

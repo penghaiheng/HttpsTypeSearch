@@ -1,17 +1,3 @@
-export type NativeUrlKey = 'scheme' | 'host' | 'hostname' | 'port' | 'path' | 'pathname' | 'query' | 'origin' | 'fullUrl';
-
-export type CustomRuleMode = 'fixed' | 'query' | 'template' | 'regex' | 'hostVariant' | 'pathSegment';
-
-export interface CustomUrlRule {
-  name: string;
-  mode: CustomRuleMode;
-  value?: string;
-  source?: NativeUrlKey;
-  pattern?: string;
-  flags?: string;
-  group?: number;
-}
-
 export interface ExtensionSettings {
   endpoint: string;
   token: string;
@@ -20,9 +6,9 @@ export interface ExtensionSettings {
   autoFillSingleResult: boolean;
   allowOverwrite: boolean;
   fetchSensitiveOnDemand: boolean;
-  nativeUrlKeys: NativeUrlKey[];
-  customUrlRules: CustomUrlRule[];
-  stopOnFirstHit: boolean;
+  termSource: 'hostname' | 'hostnameWithPort';
+  matchDefaultUrl: boolean;
+  customFieldKeywords: string[];
 }
 
 export interface NativeUrlParams {
@@ -48,6 +34,7 @@ export interface SearchItem {
   Password?: string;
   OtpCurrent?: string;
   CustomFields?: Record<string, string>;
+  MatchedFields?: MatchedField[];
   [key: string]: unknown;
 }
 
@@ -66,4 +53,10 @@ export interface TabState {
   results: SearchItem[];
   lastError?: string;
   updatedAt: number;
+}
+
+export interface MatchedField {
+  source: 'URL' | 'CustomFields';
+  key: string;
+  value: string;
 }

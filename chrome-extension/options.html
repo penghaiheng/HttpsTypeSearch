@@ -68,7 +68,7 @@
       margin-top: 14px;
       font-weight: bold;
     }
-    input[type="text"], input[type="number"], textarea {
+    input[type="text"], input[type="number"], textarea, select {
       width: 100%;
       margin-top: 6px;
       padding: 10px 12px;
@@ -78,7 +78,7 @@
       background: #fff;
       color: var(--text);
     }
-    input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+    input[type="text"]:focus, input[type="number"]:focus, textarea:focus, select:focus {
       outline: 2px solid rgba(37, 99, 235, 0.15);
       border-color: var(--primary);
     }
@@ -197,16 +197,21 @@
     </div>
 
     <section class="card" style="margin-top: 20px;">
-      <h2>URL matching</h2>
-      <p>Native keys are used directly as search terms. Custom rules let you derive extra terms from the current page URL.</p>
+      <h2>URL term and key matching</h2>
+      <p>Search term comes from current tab URL. Results are shown only when matching configured keys.</p>
 
-      <label>Native URL parameter keys (comma separated)</label>
-      <input id="nativeKeys" type="text" placeholder="hostname,host,origin,path,query,fullUrl" />
-      <div class="hint">Supported keys: scheme, host, hostname, port, path, pathname, query, origin, fullUrl.</div>
+      <label>Term source</label>
+      <select id="termSource">
+        <option value="hostname">hostname (e.g. qq.com)</option>
+        <option value="hostnameWithPort">hostname:port when URL has an explicit port (e.g. qq.com:1234)</option>
+      </select>
+      <div class="hint">Only hostname or hostname:port is used for term=. Path/query/hash are ignored.</div>
 
-      <label>Custom URL rules (JSON array)</label>
-      <textarea id="customRules" placeholder='[{"name":"tenant","mode":"query","value":"tenant"},{"name":"siteKey","mode":"template","value":"URL(1)-URL（2）"}]'></textarea>
-      <div class="hint">Modes: fixed/query/template/regex/hostVariant/pathSegment. Template rules support <code>{{hostname}}</code> style placeholders and path placeholders like <code>URL(1)</code>, <code>URL（2）</code>. The number refers to pathname segments starting at 1.</div>
+      <div class="checkbox-row"><label><input id="matchDefaultUrl" type="checkbox" /> <span>Match top-level default key <code>URL</code></span></label></div>
+
+      <label>CustomFields key keywords</label>
+      <textarea id="customFieldKeywords" placeholder="URL\ndomain"></textarea>
+      <div class="hint">One keyword per line, or use commas. Fuzzy match is case-insensitive and checks whether a CustomFields key contains the keyword.</div>
     </section>
 
     <div class="actions">
