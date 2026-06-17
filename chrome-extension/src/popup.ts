@@ -20,7 +20,7 @@ async function initialize(): Promise<void> {
   activeTabId = tabId;
   chrome.runtime.onMessage.addListener((message) => {
     if (message?.type !== 'TAB_STATE_UPDATED') return;
-    if (Number(message.tabId) !== activeTabId) return;
+    if (typeof message.tabId !== 'number' || message.tabId !== activeTabId) return;
     if (!message.state) return;
     renderState(message.state as TabState);
   });
@@ -37,9 +37,9 @@ async function initialize(): Promise<void> {
   });
 }
 
-async function refreshState(tabId: number, url: string): Promise<void> {
+async function refreshState(tabId: number, tabUrl: string): Promise<void> {
   status('Searching...');
-  const response = await sendMessage<{ ok: boolean; state?: TabState; error?: string }>({ type: 'RUN_SEARCH', tabId, url });
+  const response = await sendMessage<{ ok: boolean; state?: TabState; error?: string }>({ type: 'RUN_SEARCH', tabId, url: tabUrl });
   if (!response.ok || !response.state) {
     status(presentError(response.error ?? 'Search failed.'));
     return;

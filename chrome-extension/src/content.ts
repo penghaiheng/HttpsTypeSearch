@@ -99,7 +99,7 @@ function writeValue(el: FillableElement, value: string, allowOverwrite: boolean)
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
     el.value = value;
   } else {
-    el.textContent = value;
+    el.innerText = value;
   }
   el.dispatchEvent(new Event('input', { bubbles: true }));
   el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -143,26 +143,29 @@ function isFillable(el: FillableElement): boolean {
 }
 
 function bindAutomaticDetection(): void {
-  const trigger = (target: EventTarget | null, delay = 0): void => {
+  const trigger = (target: EventTarget | null, delay = 0, isTrusted = false): void => {
     const candidate = resolveFillableTarget(target);
     if (!candidate) return;
+    if (isTrusted) {
+      suppressInteractionUntil = 0;
+    }
     scheduleFieldActivation(candidate, delay);
   };
 
   document.addEventListener('focusin', (event) => {
-    trigger(event.target);
+    trigger(event.target, 0, event.isTrusted);
   });
 
   document.addEventListener('click', (event) => {
-    trigger(event.target);
+    trigger(event.target, 0, event.isTrusted);
   });
 
   document.addEventListener('input', (event) => {
-    trigger(event.target, INTERACTION_DEBOUNCE_MS);
+    trigger(event.target, INTERACTION_DEBOUNCE_MS, event.isTrusted);
   });
 
-  document.addEventListener('keydown', () => {
-    trigger(document.activeElement, INTERACTION_DEBOUNCE_MS);
+  document.addEventListener('keydown', (event) => {
+    trigger(document.activeElement, INTERACTION_DEBOUNCE_MS, event.isTrusted);
   });
 
   const observer = new MutationObserver(() => {
@@ -225,5 +228,5 @@ function readValue(el: FillableElement): string {
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
     return el.value;
   }
-  return el.textContent ?? '';
+  return el.innerText;
 }
