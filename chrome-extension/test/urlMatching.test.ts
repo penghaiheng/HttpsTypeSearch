@@ -34,3 +34,19 @@ test('buildSearchTerms includes native and custom terms', () => {
   assert.ok(result.terms.includes('acme'));
   assert.ok(result.terms.includes('/login'));
 });
+
+test('template rules support URL(n) and URL（n） path placeholders', () => {
+  const settings: ExtensionSettings = {
+    ...DEFAULT_SETTINGS,
+    nativeUrlKeys: [],
+    customUrlRules: [
+      { name: 'firstSegment', mode: 'template', value: 'URL(1)' },
+      { name: 'combined', mode: 'template', value: 'URL(1)-URL（2）' }
+    ]
+  };
+
+  const result = buildSearchTerms('https://example.com/team/admin/login', settings);
+  assert.equal(result.custom.firstSegment, 'team');
+  assert.equal(result.custom.combined, 'team-admin');
+  assert.deepEqual(result.terms, ['team', 'team-admin']);
+});

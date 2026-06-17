@@ -52,6 +52,9 @@ In KeePass plugin options, make sure:
 - API token is copied to extension options.
 - If you want direct password/OTP from search result, enable corresponding plugin options,
   or enable extension option `Fetch password/OTP from dedicated endpoints`.
+- If Chrome shows `Failed to fetch` for a local HTTPS endpoint with a self-signed certificate, the extension cannot bypass certificate validation. Either:
+  - trust the local certificate in your OS / Chrome, or
+  - switch the endpoint to `http://localhost:19456` or `http://127.0.0.1:19456` for local-only use.
 
 ## URL Matching and Custom Rules
 
@@ -66,9 +69,16 @@ Example:
 [
   { "name": "tenant", "mode": "query", "value": "tenant" },
   { "name": "rootDomain", "mode": "hostVariant" },
-  { "name": "sitePath", "mode": "template", "value": "{{origin}}{{pathname}}" },
+  { "name": "sitePath", "mode": "template", "value": "{{origin}}/URL(1)/URL（2）" },
   { "name": "env", "mode": "regex", "source": "hostname", "pattern": "^(dev|test|prod)\\." }
 ]
 ```
+
+Template rules support both:
+
+- native placeholders like `{{hostname}}`, `{{origin}}`, `{{pathname}}`
+- indexed path placeholders like `URL(1)`, `URL（2）`, `URL(3)` ...
+
+`URL(n)` / `URL（n）` use a 1-based pathname segment index and only accept integer digits inside the brackets.
 
 If any native/custom term returns search results, it is treated as a match.

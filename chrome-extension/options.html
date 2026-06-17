@@ -4,43 +4,216 @@
   <meta charset="utf-8" />
   <title>HttpsTypeSearch Options</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 12px; }
-    label { display: block; margin-top: 12px; font-weight: bold; }
-    input[type="text"], input[type="number"], textarea { width: 100%; box-sizing: border-box; margin-top: 4px; }
-    textarea { min-height: 140px; }
-    .row { margin-top: 8px; }
-    .hint { color: #666; font-size: 12px; }
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --border: #d9e1f2;
+      --text: #1f2937;
+      --muted: #5b6474;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success-bg: #ecfdf3;
+      --success-text: #166534;
+      --error-bg: #fef2f2;
+      --error-text: #b91c1c;
+      --info-bg: #eff6ff;
+      --info-text: #1d4ed8;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px 16px 48px;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+    .page-lead {
+      margin: 0 0 24px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+    }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+    .card > p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    label {
+      display: block;
+      margin-top: 14px;
+      font-weight: bold;
+    }
+    input[type="text"], input[type="number"], textarea {
+      width: 100%;
+      margin-top: 6px;
+      padding: 10px 12px;
+      border: 1px solid #c8d3ea;
+      border-radius: 10px;
+      font-size: 14px;
+      background: #fff;
+      color: var(--text);
+    }
+    input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+      outline: 2px solid rgba(37, 99, 235, 0.15);
+      border-color: var(--primary);
+    }
+    textarea {
+      min-height: 180px;
+      resize: vertical;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      line-height: 1.5;
+    }
+    .checkbox-row {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid #e5eaf5;
+      border-radius: 10px;
+      background: #fafcff;
+    }
+    .checkbox-row label {
+      margin: 0;
+      font-weight: normal;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .checkbox-row input {
+      margin-top: 2px;
+    }
+    .hint {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .callout {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--info-bg);
+      color: var(--info-text);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      background: var(--primary);
+      color: #fff;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: var(--primary-dark);
+    }
+    .status {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .status.success {
+      color: var(--success-text);
+      background: var(--success-bg);
+      padding: 8px 12px;
+      border-radius: 10px;
+    }
+    .status.error {
+      color: var(--error-text);
+      background: var(--error-bg);
+      padding: 8px 12px;
+      border-radius: 10px;
+    }
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
-  <h2>HttpsTypeSearch Extension Options</h2>
+  <main>
+    <h1>HttpsTypeSearch Options</h1>
+    <p class="page-lead">Configure the local API endpoint, search behavior, and URL matching rules used by the extension. If Chrome reports <code>Failed to fetch</code> for a local HTTPS endpoint, the extension cannot bypass certificate trust checks &mdash; use a trusted certificate or switch to local HTTP.</p>
 
-  <label>API Endpoint (base URL)</label>
-  <input id="endpoint" type="text" placeholder="https://127.0.0.1:19456" />
+    <div class="grid">
+      <section class="card">
+        <h2>Local API connection</h2>
+        <p>Only <code>localhost</code> and <code>127.0.0.1</code> endpoints are allowed by the extension manifest.</p>
 
-  <label>API Token</label>
-  <input id="token" type="text" placeholder="****** from KeePass plugin" />
+        <label>API Endpoint (base URL)</label>
+        <input id="endpoint" type="text" placeholder="https://127.0.0.1:19456" />
+        <p id="endpointHelp" class="callout">Use a local endpoint such as https://127.0.0.1:19456 or http://localhost:19456.</p>
 
-  <label>Search limit</label>
-  <input id="limit" type="number" min="1" max="500" />
+        <label>API Token</label>
+        <input id="token" type="text" placeholder="Paste the token from the KeePass plugin" />
+        <div class="hint">Leave empty only if your local API does not require a token.</div>
 
-  <div class="row"><label><input id="autoSearchOnLoad" type="checkbox" /> Auto search on page load</label></div>
-  <div class="row"><label><input id="autoFillSingleResult" type="checkbox" /> Auto-fill when exactly one result matches</label></div>
-  <div class="row"><label><input id="allowOverwrite" type="checkbox" /> Allow overwriting existing input values</label></div>
-  <div class="row"><label><input id="fetchSensitiveOnDemand" type="checkbox" /> Fetch password/OTP from dedicated endpoints when not present</label></div>
+        <label>Search limit</label>
+        <input id="limit" type="number" min="1" max="500" />
+      </section>
 
-  <label>Native URL parameter keys (comma separated)</label>
-  <input id="nativeKeys" type="text" placeholder="hostname,host,origin,path,query,fullUrl" />
-  <div class="hint">Supported keys: scheme, host, hostname, port, path, pathname, query, origin, fullUrl.</div>
+      <section class="card">
+        <h2>Search and autofill</h2>
+        <p>These toggles keep the current functionality while making the behavior easier to understand.</p>
 
-  <label>Custom URL rules (JSON array)</label>
-  <textarea id="customRules" placeholder='[{"name":"tenant","mode":"query","value":"tenant"},{"name":"rootDomain","mode":"hostVariant"}]'></textarea>
-  <div class="hint">Modes: fixed/query/template/regex/hostVariant/pathSegment.</div>
+        <div class="checkbox-row"><label><input id="autoSearchOnLoad" type="checkbox" /> <span>Auto search on page load</span></label></div>
+        <div class="checkbox-row"><label><input id="autoFillSingleResult" type="checkbox" /> <span>Auto-fill when exactly one result matches</span></label></div>
+        <div class="checkbox-row"><label><input id="allowOverwrite" type="checkbox" /> <span>Allow overwriting existing input values</span></label></div>
+        <div class="checkbox-row"><label><input id="fetchSensitiveOnDemand" type="checkbox" /> <span>Fetch password/OTP from dedicated endpoints when not present</span></label></div>
+      </section>
+    </div>
 
-  <div class="row">
-    <button id="saveBtn">Save</button>
-    <span id="status"></span>
-  </div>
+    <section class="card" style="margin-top: 20px;">
+      <h2>URL matching</h2>
+      <p>Native keys are used directly as search terms. Custom rules let you derive extra terms from the current page URL.</p>
+
+      <label>Native URL parameter keys (comma separated)</label>
+      <input id="nativeKeys" type="text" placeholder="hostname,host,origin,path,query,fullUrl" />
+      <div class="hint">Supported keys: scheme, host, hostname, port, path, pathname, query, origin, fullUrl.</div>
+
+      <label>Custom URL rules (JSON array)</label>
+      <textarea id="customRules" placeholder='[{"name":"tenant","mode":"query","value":"tenant"},{"name":"siteKey","mode":"template","value":"URL(1)-URL（2）"}]'></textarea>
+      <div class="hint">Modes: fixed/query/template/regex/hostVariant/pathSegment. Template rules support <code>{{hostname}}</code> style placeholders and path placeholders like <code>URL(1)</code>, <code>URL（2）</code>. The number refers to pathname segments starting at 1.</div>
+    </section>
+
+    <div class="actions">
+      <button id="saveBtn">Save settings</button>
+      <p id="status" class="status"></p>
+    </div>
+  </main>
 
   <script type="module" src="src/options.js"></script>
 </body>
