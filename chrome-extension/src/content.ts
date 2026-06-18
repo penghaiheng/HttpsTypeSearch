@@ -312,7 +312,7 @@ function showDropdown(anchor: FillableElement, items: ContentSearchItem[]): void
       padding: '8px 12px',
       cursor: 'pointer',
       borderRadius: '3px',
-      ...(isLast ? {} : { borderBottom: '1px solid #f0f0f0' }),
+      ...(!isLast && { borderBottom: '1px solid #f0f0f0' }),
     } as Partial<CSSStyleDeclaration>);
 
     row.addEventListener('mouseenter', () => {
