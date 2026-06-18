@@ -64,6 +64,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
 
+      if (message?.type === 'INLINE_FILL_REQUEST') {
+        const tabId = sender.tab?.id;
+        if (typeof tabId !== 'number') {
+          sendResponse({ ok: false, error: 'No tab.' });
+          return;
+        }
+        const item = message.item as SearchItem;
+        await autofillTab(tabId, item);
+        sendResponse({ ok: true });
+        return;
+      }
+
       sendResponse({ ok: false, error: 'Unknown message type.' });
     } catch (error) {
       sendResponse({ ok: false, error: error instanceof Error ? error.message : 'Unexpected error.' });
