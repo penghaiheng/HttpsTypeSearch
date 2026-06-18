@@ -129,7 +129,6 @@ function classify(el: FillableElement): 'username' | 'email' | 'password' | 'otp
   if (signal.includes('otp') || signal.includes('totp') || signal.includes('2fa') || signal.includes('verificationcode') || signal.includes('authcode') || signal.includes('one-time')) return 'otp';
   if (textLikeTypes.has(inputType)) {
     if (signal.includes('user') || signal.includes('login') || signal.includes('account') || signal.includes('identifier')) return 'username';
-    if (!signal.includes('code')) return 'username';
   }
   return 'other';
 }
@@ -273,24 +272,51 @@ function showDropdown(anchor: FillableElement, items: ContentSearchItem[]): void
     e.preventDefault();
   });
 
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const isLast = i === items.length - 1;
     const row = document.createElement('div');
     row.setAttribute('data-kp-dropdown-item', '');
     const title = String(item.Title || '(untitled)');
     const username = String(item.UserName || '');
-    row.textContent = username ? `${title} \u2014 ${username}` : title;
 
-    Object.assign(row.style, {
-      padding: '6px 12px',
-      cursor: 'pointer',
-      whiteSpace: 'nowrap',
+    const titleEl = document.createElement('div');
+    titleEl.textContent = title;
+    Object.assign(titleEl.style, {
+      fontWeight: '600',
+      fontSize: '13px',
+      color: '#1a1a1a',
+      lineHeight: '1.3',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
-      color: '#222222',
+      whiteSpace: 'nowrap',
+    } as Partial<CSSStyleDeclaration>);
+    row.appendChild(titleEl);
+
+    if (username) {
+      const usernameEl = document.createElement('div');
+      usernameEl.textContent = username;
+      Object.assign(usernameEl.style, {
+        fontSize: '11px',
+        color: '#777777',
+        lineHeight: '1.3',
+        marginTop: '2px',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      } as Partial<CSSStyleDeclaration>);
+      row.appendChild(usernameEl);
+    }
+
+    Object.assign(row.style, {
+      padding: '8px 12px',
+      cursor: 'pointer',
+      borderRadius: '3px',
+      ...(isLast ? {} : { borderBottom: '1px solid #f0f0f0' }),
     } as Partial<CSSStyleDeclaration>);
 
     row.addEventListener('mouseenter', () => {
-      row.style.backgroundColor = '#e8f0fe';
+      row.style.backgroundColor = '#f0f4ff';
     });
     row.addEventListener('mouseleave', () => {
       row.style.backgroundColor = '';
