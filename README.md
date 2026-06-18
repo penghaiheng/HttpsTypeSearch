@@ -100,4 +100,4 @@ A Chrome extension implementation (Manifest V3 + TypeScript) is available in:
 
 ## Reference
 
-This project is derived from the AutoTypeSearch codebase and keeps parts of the original search implementation while changing the product goal to an HTTPS-first KeePass plugin.
+This project is derived from the [AutoTypeSearch](https://sourceforge.net/projects/autotypesearch/) codebase and keeps parts of the original search implementation while changing the product goal to an HTTPS-first KeePass plugin.
