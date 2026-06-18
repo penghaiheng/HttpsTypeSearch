@@ -1,4 +1,10 @@
+interface FieldInteractionResponse {
+  ok?: boolean;
+  state?: { results?: ContentSearchItem[] };
+}
+
 interface ContentSearchItem {
+  Title?: string;
   UserName?: string;
   Password?: string;
   OtpCurrent?: string;
@@ -15,11 +21,15 @@ let lastActivatedElement: FillableElement | null = null;
 let lastActivatedAt = 0;
 let suppressInteractionUntil = 0;
 
+let currentDropdown: HTMLElement | null = null;
+let dropdownAnchor: FillableElement | null = null;
+
 chrome.runtime.sendMessage({ type: 'PAGE_LOADED', url: window.location.href }).catch(() => {
   // ignore
 });
 
 bindAutomaticDetection();
+bindDropdownDismissal();
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type !== 'AUTOFILL_ENTRY') return;
@@ -202,12 +212,16 @@ async function activateField(target: FillableElement): Promise<void> {
   lastActivatedElement = target;
   lastActivatedAt = now;
 
-  await chrome.runtime.sendMessage({
+  const response = await chrome.runtime.sendMessage({
     type: 'FIELD_INTERACTION',
     url: window.location.href
-  }).catch(() => {
-    // ignore
-  });
+  }).catch(() => undefined) as FieldInteractionResponse | undefined;
+
+  const results = response?.ok && Array.isArray(response?.state?.results) ? response.state.results : [];
+  const kind = classify(target);
+  if (results.length > 0 && (kind === 'username' || kind === 'email')) {
+    showDropdown(target, results);
+  }
 }
 
 function resolveFillableTarget(target: EventTarget | null): FillableElement | null {
@@ -229,4 +243,106 @@ function readValue(el: FillableElement): string {
     return el.value;
   }
   return el.innerText;
+}
+
+function showDropdown(anchor: FillableElement, items: ContentSearchItem[]): void {
+  hideDropdown();
+  if (items.length === 0) return;
+
+  const dropdown = document.createElement('div');
+  dropdown.setAttribute('data-kp-dropdown', '');
+
+  Object.assign(dropdown.style, {
+    position: 'fixed',
+    zIndex: '2147483647',
+    background: '#ffffff',
+    border: '1px solid #cccccc',
+    borderRadius: '4px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
+    maxHeight: '240px',
+    overflowY: 'auto',
+    padding: '4px 0',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    fontSize: '13px',
+    lineHeight: '1.4',
+    minWidth: '180px',
+    boxSizing: 'border-box',
+  } as Partial<CSSStyleDeclaration>);
+
+  dropdown.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+  });
+
+  for (const item of items) {
+    const row = document.createElement('div');
+    row.setAttribute('data-kp-dropdown-item', '');
+    const title = String(item.Title || '(untitled)');
+    const username = String(item.UserName || '');
+    row.textContent = username ? `${title} \u2014 ${username}` : title;
+
+    Object.assign(row.style, {
+      padding: '6px 12px',
+      cursor: 'pointer',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      color: '#222222',
+    } as Partial<CSSStyleDeclaration>);
+
+    row.addEventListener('mouseenter', () => {
+      row.style.backgroundColor = '#e8f0fe';
+    });
+    row.addEventListener('mouseleave', () => {
+      row.style.backgroundColor = '';
+    });
+
+    row.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      hideDropdown();
+      chrome.runtime.sendMessage({ type: 'INLINE_FILL_REQUEST', item }).catch(() => {});
+    });
+
+    dropdown.appendChild(row);
+  }
+
+  positionDropdownNear(dropdown, anchor);
+  document.body.appendChild(dropdown);
+  currentDropdown = dropdown;
+  dropdownAnchor = anchor;
+}
+
+function positionDropdownNear(dropdown: HTMLElement, anchor: FillableElement): void {
+  const rect = (anchor as HTMLElement).getBoundingClientRect();
+  dropdown.style.left = `${rect.left}px`;
+  dropdown.style.top = `${rect.bottom + 2}px`;
+  dropdown.style.width = `${Math.max(rect.width, 180)}px`;
+}
+
+function hideDropdown(): void {
+  if (currentDropdown) {
+    currentDropdown.remove();
+    currentDropdown = null;
+    dropdownAnchor = null;
+  }
+}
+
+function bindDropdownDismissal(): void {
+  document.addEventListener('mousedown', (e) => {
+    if (!currentDropdown) return;
+    const target = e.target as Node;
+    if (currentDropdown.contains(target)) return;
+    if (dropdownAnchor && (dropdownAnchor === target || dropdownAnchor.contains(target))) return;
+    hideDropdown();
+  }, { capture: true });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && currentDropdown) {
+      hideDropdown();
+    }
+  }, { capture: true });
+
+  window.addEventListener('scroll', () => {
+    if (currentDropdown) hideDropdown();
+  }, { capture: true, passive: true });
 }
