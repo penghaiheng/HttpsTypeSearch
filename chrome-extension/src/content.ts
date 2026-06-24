@@ -12,6 +12,10 @@ interface ContentSearchItem {
 }
 
 type FillableElement = HTMLInputElement | HTMLTextAreaElement | HTMLElement;
+const NEGATIVE_USERNAME_TERMS = new Set(['code', 'context', 'search', 'select', 'query', 'comment', 'message', 'note', 'content']);
+const TEXT_LIKE_INPUT_SELECTOR = 'input:not([type]),input[type="text"],input[type="email"],input[type="tel"],input[type="number"],textarea';
+// Typical login forms are compact: one identifier field plus password.
+const MAX_LOGIN_FORM_TEXT_INPUTS = 2;
 
 const INTERACTION_DEBOUNCE_MS = 180;
 const INTERACTION_SUPPRESS_MS = 600;
@@ -138,10 +142,55 @@ function classify(el: FillableElement): 'username' | 'email' | 'password' | 'otp
   if (inputType === 'email' || signal.includes('email')) return 'email';
   if (signal.includes('otp') || signal.includes('totp') || signal.includes('2fa') || signal.includes('verificationcode') || signal.includes('authcode') || signal.includes('one-time')) return 'otp';
   if (textLikeTypes.has(inputType)) {
-    if (signal.includes('code') || signal.includes('search') || signal.includes('select') || signal.includes('context')) return 'other';
+    if (containsNegativeUsernameTerm(signal)) return 'other';
     if (signal.includes('user') || signal.includes('login') || signal.includes('account') || signal.includes('identifier')) return 'username';
+    if (hasNearbyPasswordField(el)) return 'username';
+    if ((inputType === 'text' || inputType === '') && hasLoginLikeContext(el)) return 'username';
   }
   return 'other';
+}
+
+function hasNearbyPasswordField(el: FillableElement): boolean {
+  for (const root of collectContextRoots(el)) {
+    if (!('querySelector' in root) || typeof root.querySelector !== 'function') continue;
+    const passwordField = root.querySelector('input[type="password"], input[autocomplete="current-password"], input[autocomplete="new-password"]');
+    if (passwordField && passwordField !== el) return true;
+  }
+
+  return false;
+}
+
+function containsNegativeUsernameTerm(signal: string): boolean {
+  for (const term of NEGATIVE_USERNAME_TERMS) {
+    if (signal.includes(term)) return true;
+  }
+  return false;
+}
+
+function hasLoginLikeContext(el: FillableElement): boolean {
+  for (const root of collectContextRoots(el)) {
+    if (!('querySelector' in root) || typeof root.querySelector !== 'function') continue;
+    const submitControl = root.querySelector('button[type="submit"], input[type="submit"]');
+    if (!submitControl) continue;
+    if (!('querySelectorAll' in root) || typeof root.querySelectorAll !== 'function') continue;
+    const textLikeCount = root.querySelectorAll(TEXT_LIKE_INPUT_SELECTOR).length;
+    if (textLikeCount <= MAX_LOGIN_FORM_TEXT_INPUTS) return true;
+  }
+
+  return false;
+}
+
+// Collect likely form/container roots around an input so nearby-field heuristics stay local.
+function collectContextRoots(el: FillableElement): ParentNode[] {
+  if (!(el instanceof HTMLElement)) return [];
+  const roots = new Set<ParentNode>();
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    if (el.form) roots.add(el.form);
+  }
+  const formLike = el.closest('form,[role="form"]');
+  if (formLike) roots.add(formLike);
+  if (el.parentElement) roots.add(el.parentElement);
+  return [...roots];
 }
 
 function clean(value: string): string {
