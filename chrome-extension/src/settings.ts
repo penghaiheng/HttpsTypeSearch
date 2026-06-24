@@ -1,14 +1,14 @@
 import type { ExtensionSettings } from './types.js';
 
 export const DEFAULT_SETTINGS: ExtensionSettings = {
-  endpoint: 'https://127.0.0.1:19456',
+  endpoint: 'https://localhost:19456',
   token: '',
   maxResults: 20,
-  autoSearchOnLoad: false,
-  autoFillSingleResult: true,
-  allowOverwrite: false,
-  fetchSensitiveOnDemand: false,
-  termSource: 'hostname',
+  autoSearchOnLoad: true,
+  autoFillSingleResult: false,
+  allowOverwrite: true,
+  fetchSensitiveOnDemand: true,
+  termSource: 'hostnameWithPort',
   matchDefaultUrl: true,
   customFieldKeywords: ['URL']
 };
