@@ -12,7 +12,6 @@ interface ContentSearchItem {
 }
 
 type FillableElement = HTMLInputElement | HTMLTextAreaElement | HTMLElement;
-type DropdownItemRow = HTMLElement & { __kpItem?: ContentSearchItem };
 const NEGATIVE_USERNAME_TERMS = new Set(['code', 'context', 'search', 'select', 'query', 'comment', 'message', 'note', 'content']);
 const TEXT_LIKE_INPUT_SELECTOR = 'input:not([type]),input[type="text"],input[type="email"],input[type="tel"],input[type="number"],textarea';
 // Typical login forms are compact: one identifier field plus password.
@@ -28,6 +27,7 @@ let suppressInteractionUntil = 0;
 
 let currentDropdown: HTMLElement | null = null;
 let dropdownAnchor: FillableElement | null = null;
+let currentDropdownItems: ContentSearchItem[] = [];
 
 let inlineSuggestionsEnabled = true;
 let lastResults: ContentSearchItem[] = [];
@@ -342,15 +342,16 @@ function resolveEventElement(target: EventTarget | null): Element | null {
   return null;
 }
 
-function resolveDropdownItemTarget(target: EventTarget | null): DropdownItemRow | null {
-  return resolveEventElement(target)?.closest<DropdownItemRow>('[data-kp-dropdown-item]') ?? null;
+function resolveDropdownItemTarget(target: EventTarget | null): HTMLElement | null {
+  return resolveEventElement(target)?.closest<HTMLElement>('[data-kp-dropdown-item]') ?? null;
 }
 
 function selectDropdownItem(target: EventTarget | null): boolean {
   const row = resolveDropdownItemTarget(target);
   if (!row) return false;
 
-  const item = row.__kpItem;
+  const index = Number(row.getAttribute('data-kp-dropdown-item-index'));
+  const item = Number.isInteger(index) ? currentDropdownItems[index] : undefined;
   if (!item) return false;
 
   hideDropdown();
@@ -359,9 +360,8 @@ function selectDropdownItem(target: EventTarget | null): boolean {
 }
 
 function buildItemRow(item: ContentSearchItem): HTMLElement {
-  const row = document.createElement('div') as DropdownItemRow;
+  const row = document.createElement('div');
   row.setAttribute('data-kp-dropdown-item', '');
-  row.__kpItem = item;
 
   const title = String(item.Title || '(untitled)');
   const username = String(item.UserName || '');
@@ -410,11 +410,14 @@ function buildItemRow(item: ContentSearchItem): HTMLElement {
 }
 
 function renderDropdownItems(dropdown: HTMLElement, items: ContentSearchItem[]): void {
+  currentDropdownItems = items;
   while (dropdown.firstChild) {
     dropdown.removeChild(dropdown.firstChild);
   }
-  for (const item of items) {
-    dropdown.appendChild(buildItemRow(item));
+  for (const [index, item] of items.entries()) {
+    const row = buildItemRow(item);
+    row.setAttribute('data-kp-dropdown-item-index', String(index));
+    dropdown.appendChild(row);
   }
 }
 
@@ -469,6 +472,7 @@ function hideDropdown(): void {
     currentDropdown = null;
     dropdownAnchor = null;
   }
+  currentDropdownItems = [];
 }
 
 function bindDropdownDismissal(): void {
