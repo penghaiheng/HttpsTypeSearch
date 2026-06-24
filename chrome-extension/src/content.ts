@@ -173,14 +173,14 @@ function hasLoginLikeContext(el: FillableElement): boolean {
 // Collect likely form/container roots around an input so nearby-field heuristics stay local.
 function collectContextRoots(el: FillableElement): ParentNode[] {
   if (!(el instanceof HTMLElement)) return [];
-  const roots: ParentNode[] = [];
+  const roots = new Set<ParentNode>();
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-    if (el.form) roots.push(el.form);
+    if (el.form) roots.add(el.form);
   }
   const formLike = el.closest('form,[role="form"]');
-  if (formLike) roots.push(formLike);
-  if (el.parentElement) roots.push(el.parentElement);
-  return roots;
+  if (formLike) roots.add(formLike);
+  if (el.parentElement) roots.add(el.parentElement);
+  return [...roots];
 }
 
 function clean(value: string): string {
