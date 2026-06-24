@@ -12,6 +12,7 @@ interface ContentSearchItem {
 }
 
 type FillableElement = HTMLInputElement | HTMLTextAreaElement | HTMLElement;
+type DropdownItemRow = HTMLElement & { __kpItem?: ContentSearchItem };
 const NEGATIVE_USERNAME_TERMS = new Set(['code', 'context', 'search', 'select', 'query', 'comment', 'message', 'note', 'content']);
 const TEXT_LIKE_INPUT_SELECTOR = 'input:not([type]),input[type="text"],input[type="email"],input[type="tel"],input[type="number"],textarea';
 // Typical login forms are compact: one identifier field plus password.
@@ -27,7 +28,6 @@ let suppressInteractionUntil = 0;
 
 let currentDropdown: HTMLElement | null = null;
 let dropdownAnchor: FillableElement | null = null;
-const dropdownItemsByRow = new WeakMap<HTMLElement, ContentSearchItem>();
 
 let inlineSuggestionsEnabled = true;
 let lastResults: ContentSearchItem[] = [];
@@ -342,15 +342,15 @@ function resolveEventElement(target: EventTarget | null): Element | null {
   return null;
 }
 
-function resolveDropdownItemTarget(target: EventTarget | null): HTMLElement | null {
-  return resolveEventElement(target)?.closest<HTMLElement>('[data-kp-dropdown-item]') ?? null;
+function resolveDropdownItemTarget(target: EventTarget | null): DropdownItemRow | null {
+  return resolveEventElement(target)?.closest<DropdownItemRow>('[data-kp-dropdown-item]') ?? null;
 }
 
 function selectDropdownItem(target: EventTarget | null): boolean {
   const row = resolveDropdownItemTarget(target);
   if (!row) return false;
 
-  const item = dropdownItemsByRow.get(row);
+  const item = row.__kpItem;
   if (!item) return false;
 
   hideDropdown();
@@ -359,9 +359,9 @@ function selectDropdownItem(target: EventTarget | null): boolean {
 }
 
 function buildItemRow(item: ContentSearchItem): HTMLElement {
-  const row = document.createElement('div');
+  const row = document.createElement('div') as DropdownItemRow;
   row.setAttribute('data-kp-dropdown-item', '');
-  dropdownItemsByRow.set(row, item);
+  row.__kpItem = item;
 
   const title = String(item.Title || '(untitled)');
   const username = String(item.UserName || '');
@@ -445,12 +445,7 @@ function showDropdown(anchor: FillableElement, items: ContentSearchItem[]): void
     if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
-    void selectDropdownItem(e.target);
-  });
-
-  dropdown.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    selectDropdownItem(e.target);
   });
 
   renderDropdownItems(dropdown, items);
