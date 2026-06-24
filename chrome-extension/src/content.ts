@@ -351,7 +351,7 @@ function selectDropdownItem(target: EventTarget | null): boolean {
   if (!row) return false;
 
   const index = Number(row.getAttribute('data-kp-dropdown-item-index'));
-  const item = Number.isInteger(index) && index >= 0 && index < currentDropdownItems.length
+  const item = !Number.isNaN(index) && Number.isInteger(index) && index >= 0 && index < currentDropdownItems.length
     ? currentDropdownItems[index]
     : undefined;
   if (!item) return false;
@@ -447,7 +447,10 @@ function showDropdown(anchor: FillableElement, items: ContentSearchItem[]): void
   } as Partial<CSSStyleDeclaration>);
 
   dropdown.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0) {
+      e.stopPropagation();
+      return;
+    }
     if (selectDropdownItem(e.target)) {
       e.preventDefault();
       e.stopPropagation();
