@@ -24,6 +24,16 @@ let suppressInteractionUntil = 0;
 let currentDropdown: HTMLElement | null = null;
 let dropdownAnchor: FillableElement | null = null;
 
+let inlineSuggestionsEnabled = true;
+let lastResults: ContentSearchItem[] = [];
+
+// Load persisted toggle state from extension storage
+chrome.storage.local.get('inlineSuggestionsEnabled').then((result: Record<string, unknown>) => {
+  if (typeof result['inlineSuggestionsEnabled'] === 'boolean') {
+    inlineSuggestionsEnabled = result['inlineSuggestionsEnabled'] as boolean;
+  }
+}).catch(() => {});
+
 chrome.runtime.sendMessage({ type: 'PAGE_LOADED', url: window.location.href }).catch(() => {
   // ignore
 });
@@ -128,6 +138,7 @@ function classify(el: FillableElement): 'username' | 'email' | 'password' | 'otp
   if (inputType === 'email' || signal.includes('email')) return 'email';
   if (signal.includes('otp') || signal.includes('totp') || signal.includes('2fa') || signal.includes('verificationcode') || signal.includes('authcode') || signal.includes('one-time')) return 'otp';
   if (textLikeTypes.has(inputType)) {
+    if (signal.includes('code') || signal.includes('search') || signal.includes('select') || signal.includes('context')) return 'other';
     if (signal.includes('user') || signal.includes('login') || signal.includes('account') || signal.includes('identifier')) return 'username';
   }
   return 'other';
@@ -170,6 +181,13 @@ function bindAutomaticDetection(): void {
   });
 
   document.addEventListener('input', (event) => {
+    // If a dropdown is already open and the user is typing in its anchor field,
+    // re-filter the existing results without re-fetching from background.
+    if (currentDropdown && dropdownAnchor && event.target === dropdownAnchor) {
+      const query = readValue(dropdownAnchor).trim();
+      filterAndUpdateDropdown(query);
+      return;
+    }
     trigger(event.target, INTERACTION_DEBOUNCE_MS, event.isTrusted);
   });
 
@@ -211,15 +229,19 @@ async function activateField(target: FillableElement): Promise<void> {
   lastActivatedElement = target;
   lastActivatedAt = now;
 
+  if (!inlineSuggestionsEnabled) return;
+
   const response = await chrome.runtime.sendMessage({
     type: 'FIELD_INTERACTION',
     url: window.location.href
   }).catch(() => undefined) as FieldInteractionResponse | undefined;
 
   const results = response?.ok && Array.isArray(response?.state?.results) ? response.state.results : [];
+  lastResults = results;
   const kind = classify(target);
   if (results.length > 0 && (kind === 'username' || kind === 'email')) {
-    showDropdown(target, results);
+    const query = readValue(target).trim();
+    showDropdown(target, filterResults(results, query));
   }
 }
 
@@ -244,6 +266,92 @@ function readValue(el: FillableElement): string {
   return el.innerText;
 }
 
+function filterResults(items: ContentSearchItem[], query: string): ContentSearchItem[] {
+  if (!query) return items;
+  const q = query.toLowerCase();
+  return items.filter((item) => {
+    const title = String(item.Title || '').toLowerCase();
+    const username = String(item.UserName || '').toLowerCase();
+    return title.includes(q) || username.includes(q);
+  });
+}
+
+function filterAndUpdateDropdown(query: string): void {
+  if (!currentDropdown || !dropdownAnchor) return;
+  const filtered = filterResults(lastResults, query);
+  if (filtered.length === 0) {
+    hideDropdown();
+    return;
+  }
+  renderDropdownItems(currentDropdown, filtered);
+}
+
+function buildItemRow(item: ContentSearchItem): HTMLElement {
+  const row = document.createElement('div');
+  row.setAttribute('data-kp-dropdown-item', '');
+
+  const title = String(item.Title || '(untitled)');
+  const username = String(item.UserName || '');
+
+  const titleEl = document.createElement('div');
+  titleEl.textContent = title;
+  Object.assign(titleEl.style, {
+    fontWeight: '600',
+    fontSize: '13px',
+    color: '#1a1a1a',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  } as Partial<CSSStyleDeclaration>);
+  row.appendChild(titleEl);
+
+  if (username) {
+    const usernameEl = document.createElement('div');
+    usernameEl.textContent = username;
+    Object.assign(usernameEl.style, {
+      fontSize: '11px',
+      color: '#777777',
+      marginTop: '2px',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+    } as Partial<CSSStyleDeclaration>);
+    row.appendChild(usernameEl);
+  }
+
+  Object.assign(row.style, {
+    padding: '8px 12px',
+    cursor: 'pointer',
+    borderRadius: '3px',
+    margin: '2px 4px',
+  } as Partial<CSSStyleDeclaration>);
+
+  row.addEventListener('mouseenter', () => {
+    row.style.backgroundColor = '#e8f0fe';
+  });
+  row.addEventListener('mouseleave', () => {
+    row.style.backgroundColor = '';
+  });
+
+  row.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    hideDropdown();
+    chrome.runtime.sendMessage({ type: 'INLINE_FILL_REQUEST', item }).catch(() => {});
+  });
+
+  return row;
+}
+
+function renderDropdownItems(dropdown: HTMLElement, items: ContentSearchItem[]): void {
+  while (dropdown.firstChild) {
+    dropdown.removeChild(dropdown.firstChild);
+  }
+  for (const item of items) {
+    dropdown.appendChild(buildItemRow(item));
+  }
+}
+
 function showDropdown(anchor: FillableElement, items: ContentSearchItem[]): void {
   hideDropdown();
   if (items.length === 0) return;
@@ -256,15 +364,14 @@ function showDropdown(anchor: FillableElement, items: ContentSearchItem[]): void
     zIndex: '2147483647',
     background: '#ffffff',
     border: '1px solid #cccccc',
-    borderRadius: '4px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
-    maxHeight: '240px',
+    borderRadius: '6px',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+    maxHeight: '260px',
     overflowY: 'auto',
     padding: '4px 0',
     fontFamily: 'system-ui, -apple-system, sans-serif',
-    fontSize: '13px',
     lineHeight: '1.4',
-    minWidth: '180px',
+    minWidth: '200px',
     boxSizing: 'border-box',
   } as Partial<CSSStyleDeclaration>);
 
@@ -272,65 +379,7 @@ function showDropdown(anchor: FillableElement, items: ContentSearchItem[]): void
     e.preventDefault();
   });
 
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    const isLast = i === items.length - 1;
-    const row = document.createElement('div');
-    row.setAttribute('data-kp-dropdown-item', '');
-    const title = String(item.Title || '(untitled)');
-    const username = String(item.UserName || '');
-
-    const titleEl = document.createElement('div');
-    titleEl.textContent = title;
-    Object.assign(titleEl.style, {
-      fontWeight: '600',
-      fontSize: '13px',
-      color: '#1a1a1a',
-      lineHeight: '1.3',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap',
-    } as Partial<CSSStyleDeclaration>);
-    row.appendChild(titleEl);
-
-    if (username) {
-      const usernameEl = document.createElement('div');
-      usernameEl.textContent = username;
-      Object.assign(usernameEl.style, {
-        fontSize: '11px',
-        color: '#777777',
-        lineHeight: '1.3',
-        marginTop: '2px',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-      } as Partial<CSSStyleDeclaration>);
-      row.appendChild(usernameEl);
-    }
-
-    Object.assign(row.style, {
-      padding: '8px 12px',
-      cursor: 'pointer',
-      borderRadius: '3px',
-      ...(!isLast && { borderBottom: '1px solid #f0f0f0' }),
-    } as Partial<CSSStyleDeclaration>);
-
-    row.addEventListener('mouseenter', () => {
-      row.style.backgroundColor = '#f0f4ff';
-    });
-    row.addEventListener('mouseleave', () => {
-      row.style.backgroundColor = '';
-    });
-
-    row.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      hideDropdown();
-      chrome.runtime.sendMessage({ type: 'INLINE_FILL_REQUEST', item }).catch(() => {});
-    });
-
-    dropdown.appendChild(row);
-  }
+  renderDropdownItems(dropdown, items);
 
   positionDropdownNear(dropdown, anchor);
   document.body.appendChild(dropdown);
@@ -363,6 +412,14 @@ function bindDropdownDismissal(): void {
   }, { capture: true });
 
   document.addEventListener('keydown', (e) => {
+    // Alt+K: toggle inline suggestions on/off
+    if (e.altKey && e.key === 'k') {
+      e.preventDefault();
+      inlineSuggestionsEnabled = !inlineSuggestionsEnabled;
+      chrome.storage.local.set({ inlineSuggestionsEnabled }).catch(() => {});
+      if (!inlineSuggestionsEnabled) hideDropdown();
+      return;
+    }
     if (e.key === 'Escape' && currentDropdown) {
       hideDropdown();
     }
