@@ -53,17 +53,19 @@ type ClassifyFn = (el: FakeHTMLElement) => 'username' | 'email' | 'password' | '
 async function loadClassify(): Promise<ClassifyFn> {
   const contentPath = path.resolve(process.cwd(), 'dist/src/content.js');
   const content = await readFile(contentPath, 'utf8');
+  const negativeTermsDeclaration = content.match(/const NEGATIVE_USERNAME_TERMS = new Set\(\[[\s\S]*?\]\);/);
+  const textLikeSelectorDeclaration = content.match(/const TEXT_LIKE_INPUT_SELECTOR = '.*?';/);
   const start = content.indexOf('function classify(');
   const end = content.indexOf('function isFillable(');
+  assert.ok(negativeTermsDeclaration, 'expected NEGATIVE_USERNAME_TERMS constant in compiled content script');
+  assert.ok(textLikeSelectorDeclaration, 'expected TEXT_LIKE_INPUT_SELECTOR constant in compiled content script');
   assert.ok(start >= 0 && end > start, 'expected classify snippet in compiled content script');
-  const snippet = content.slice(start, end);
+  const snippet = `${negativeTermsDeclaration[0]}\n${textLikeSelectorDeclaration[0]}\n${content.slice(start, end)}`;
 
   const context: Record<string, unknown> = {
     HTMLInputElement: FakeInputElement,
     HTMLTextAreaElement: FakeTextAreaElement,
     HTMLElement: FakeHTMLElement,
-    NEGATIVE_USERNAME_TERMS: new Set(['code', 'context', 'search', 'query', 'comment', 'message', 'note', 'content']),
-    TEXT_LIKE_INPUT_SELECTOR: 'input:not([type]),input[type="text"],input[type="email"],input[type="tel"],input[type="number"],textarea',
     Set,
   };
 

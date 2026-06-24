@@ -162,12 +162,14 @@ function hasLoginLikeContext(el: FillableElement): boolean {
     if (!submitControl) continue;
     if (!('querySelectorAll' in root) || typeof root.querySelectorAll !== 'function') continue;
     const textLikeCount = root.querySelectorAll(TEXT_LIKE_INPUT_SELECTOR).length;
+    // Typical login forms are compact (username + password or one identifier + submit).
     if (textLikeCount <= 2) return true;
   }
 
   return false;
 }
 
+// Collect likely form/container roots around an input so nearby-field heuristics stay local.
 function collectContextRoots(el: FillableElement): ParentNode[] {
   if (!(el instanceof HTMLElement)) return [];
   const roots: ParentNode[] = [];
