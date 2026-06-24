@@ -428,7 +428,7 @@ function showDropdown(anchor: FillableElement, items: ContentSearchItem[]): void
   if (items.length === 0) return;
 
   const dropdown = document.createElement('div');
-  dropdown.setAttribute('data-kp-dropdown', 'true');
+  dropdown.setAttribute('data-kp-dropdown', '');
 
   Object.assign(dropdown.style, {
     position: 'fixed',
@@ -448,9 +448,12 @@ function showDropdown(anchor: FillableElement, items: ContentSearchItem[]): void
 
   dropdown.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
-    e.preventDefault();
+    if (selectDropdownItem(e.target)) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     e.stopPropagation();
-    selectDropdownItem(e.target);
   });
 
   renderDropdownItems(dropdown, items);
