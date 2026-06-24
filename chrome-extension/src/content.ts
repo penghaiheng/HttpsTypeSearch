@@ -129,7 +129,7 @@ function classify(el: FillableElement): 'username' | 'email' | 'password' | 'otp
   if (signal.includes('otp') || signal.includes('totp') || signal.includes('2fa') || signal.includes('verificationcode') || signal.includes('authcode') || signal.includes('one-time')) return 'otp';
   if (textLikeTypes.has(inputType)) {
     if (signal.includes('user') || signal.includes('login') || signal.includes('account') || signal.includes('identifier')) return 'username';
-    if (!signal.includes('code')) return 'username';
+    if (!signal.includes('code') || !signal.includes('search') || !signal.includes('select')) return 'username';
   }
   return 'other';
 }
