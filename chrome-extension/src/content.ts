@@ -351,7 +351,9 @@ function selectDropdownItem(target: EventTarget | null): boolean {
   if (!row) return false;
 
   const index = Number(row.getAttribute('data-kp-dropdown-item-index'));
-  const item = Number.isInteger(index) ? currentDropdownItems[index] : undefined;
+  const item = Number.isInteger(index) && index >= 0 && index < currentDropdownItems.length
+    ? currentDropdownItems[index]
+    : undefined;
   if (!item) return false;
 
   hideDropdown();
@@ -426,7 +428,7 @@ function showDropdown(anchor: FillableElement, items: ContentSearchItem[]): void
   if (items.length === 0) return;
 
   const dropdown = document.createElement('div');
-  dropdown.setAttribute('data-kp-dropdown', '');
+  dropdown.setAttribute('data-kp-dropdown', 'true');
 
   Object.assign(dropdown.style, {
     position: 'fixed',

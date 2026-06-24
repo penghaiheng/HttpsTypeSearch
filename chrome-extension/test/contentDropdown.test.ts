@@ -29,5 +29,6 @@ test('compiled content script includes inline dropdown show/hide logic', async (
   assert.match(content, /buildItemRow|renderDropdownItems/, 'item row builder must be present');
   assert.match(content, /closest\(['"]\[data-kp-dropdown-item\]['"]\)/, 'nested dropdown clicks must resolve to the row');
   assert.match(content, /selectDropdownItem/, 'dropdown item selection helper must be present');
+  assert.match(content, /data-kp-dropdown-item-index/, 'dropdown rows must carry an index for delegated selection');
   assert.match(content, /closest\(['"]\[data-kp-dropdown\]['"]\)/, 'outside-click dismissal must recognize nested dropdown elements');
 });
