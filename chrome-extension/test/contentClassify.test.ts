@@ -63,6 +63,7 @@ async function loadClassify(): Promise<ClassifyFn> {
     HTMLTextAreaElement: FakeTextAreaElement,
     HTMLElement: FakeHTMLElement,
     NEGATIVE_USERNAME_TERMS: new Set(['code', 'context', 'search', 'query', 'comment', 'message', 'note', 'content']),
+    TEXT_LIKE_INPUT_SELECTOR: 'input:not([type]),input[type="text"],input[type="email"],input[type="tel"],input[type="number"],textarea',
     Set,
   };
 

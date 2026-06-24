@@ -13,6 +13,7 @@ interface ContentSearchItem {
 
 type FillableElement = HTMLInputElement | HTMLTextAreaElement | HTMLElement;
 const NEGATIVE_USERNAME_TERMS = new Set(['code', 'context', 'search', 'query', 'comment', 'message', 'note', 'content']);
+const TEXT_LIKE_INPUT_SELECTOR = 'input:not([type]),input[type="text"],input[type="email"],input[type="tel"],input[type="number"],textarea';
 
 const INTERACTION_DEBOUNCE_MS = 180;
 const INTERACTION_SUPPRESS_MS = 600;
@@ -160,7 +161,7 @@ function hasLoginLikeContext(el: FillableElement): boolean {
     const submitControl = root.querySelector('button[type="submit"], input[type="submit"]');
     if (!submitControl) continue;
     if (!('querySelectorAll' in root) || typeof root.querySelectorAll !== 'function') continue;
-    const textLikeCount = root.querySelectorAll('input:not([type]),input[type="text"],input[type="email"],input[type="tel"],input[type="number"],textarea').length;
+    const textLikeCount = root.querySelectorAll(TEXT_LIKE_INPUT_SELECTOR).length;
     if (textLikeCount <= 2) return true;
   }
 
