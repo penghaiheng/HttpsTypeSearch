@@ -14,6 +14,8 @@ interface ContentSearchItem {
 type FillableElement = HTMLInputElement | HTMLTextAreaElement | HTMLElement;
 const NEGATIVE_USERNAME_TERMS = new Set(['code', 'context', 'search', 'query', 'comment', 'message', 'note', 'content']);
 const TEXT_LIKE_INPUT_SELECTOR = 'input:not([type]),input[type="text"],input[type="email"],input[type="tel"],input[type="number"],textarea';
+// Typical login forms are compact: one identifier field plus password.
+const MAX_LOGIN_FORM_TEXT_INPUTS = 2;
 
 const INTERACTION_DEBOUNCE_MS = 180;
 const INTERACTION_SUPPRESS_MS = 600;
@@ -162,8 +164,7 @@ function hasLoginLikeContext(el: FillableElement): boolean {
     if (!submitControl) continue;
     if (!('querySelectorAll' in root) || typeof root.querySelectorAll !== 'function') continue;
     const textLikeCount = root.querySelectorAll(TEXT_LIKE_INPUT_SELECTOR).length;
-    // Typical login forms are compact (username + password or one identifier + submit).
-    if (textLikeCount <= 2) return true;
+    if (textLikeCount <= MAX_LOGIN_FORM_TEXT_INPUTS) return true;
   }
 
   return false;
