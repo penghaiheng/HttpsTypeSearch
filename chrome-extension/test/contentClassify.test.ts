@@ -62,6 +62,7 @@ async function loadClassify(): Promise<ClassifyFn> {
     HTMLInputElement: FakeInputElement,
     HTMLTextAreaElement: FakeTextAreaElement,
     HTMLElement: FakeHTMLElement,
+    NEGATIVE_USERNAME_TERMS: new Set(['code', 'context', 'search', 'query', 'comment', 'message', 'note', 'content']),
     Set,
   };
 

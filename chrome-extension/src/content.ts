@@ -12,6 +12,7 @@ interface ContentSearchItem {
 }
 
 type FillableElement = HTMLInputElement | HTMLTextAreaElement | HTMLElement;
+const NEGATIVE_USERNAME_TERMS = new Set(['code', 'context', 'search', 'query', 'comment', 'message', 'note', 'content']);
 
 const INTERACTION_DEBOUNCE_MS = 180;
 const INTERACTION_SUPPRESS_MS = 600;
@@ -123,23 +124,51 @@ function classify(el: FillableElement): 'username' | 'email' | 'password' | 'otp
     : [];
   const signal = clean([el.id, el.getAttribute('autocomplete') || '', el.getAttribute('aria-label') || '', ...textualHints].join(' '));
   const textLikeTypes = new Set(['text', 'search', 'tel', 'number', '']);
-  const negativeTerms = ['code', 'context', 'search', 'query', 'comment', 'message', 'note', 'content'];
 
   if (inputType === 'password' || signal.includes('password') || signal.includes('passwd')) return 'password';
   if (inputType === 'email' || signal.includes('email')) return 'email';
   if (signal.includes('otp') || signal.includes('totp') || signal.includes('2fa') || signal.includes('verificationcode') || signal.includes('authcode') || signal.includes('one-time')) return 'otp';
   if (textLikeTypes.has(inputType)) {
-    if (negativeTerms.some((term) => signal.includes(term))) return 'other';
+    if (containsNegativeUsernameTerm(signal)) return 'other';
     if (signal.includes('user') || signal.includes('login') || signal.includes('account') || signal.includes('identifier')) return 'username';
     if (hasNearbyPasswordField(el)) return 'username';
-    if (inputType === 'text' || inputType === '') return 'username';
+    if ((inputType === 'text' || inputType === '') && hasLoginLikeContext(el)) return 'username';
   }
   return 'other';
 }
 
 function hasNearbyPasswordField(el: FillableElement): boolean {
-  if (!(el instanceof HTMLElement)) return false;
+  for (const root of collectContextRoots(el)) {
+    if (!('querySelector' in root) || typeof root.querySelector !== 'function') continue;
+    const passwordField = root.querySelector('input[type="password"], input[autocomplete="current-password"], input[autocomplete="new-password"]');
+    if (passwordField && passwordField !== el) return true;
+  }
 
+  return false;
+}
+
+function containsNegativeUsernameTerm(signal: string): boolean {
+  for (const term of NEGATIVE_USERNAME_TERMS) {
+    if (signal.includes(term)) return true;
+  }
+  return false;
+}
+
+function hasLoginLikeContext(el: FillableElement): boolean {
+  for (const root of collectContextRoots(el)) {
+    if (!('querySelector' in root) || typeof root.querySelector !== 'function') continue;
+    const submitControl = root.querySelector('button[type="submit"], input[type="submit"]');
+    if (!submitControl) continue;
+    if (!('querySelectorAll' in root) || typeof root.querySelectorAll !== 'function') continue;
+    const textLikeCount = root.querySelectorAll('input:not([type]),input[type="text"],input[type="email"],input[type="tel"],input[type="number"],textarea').length;
+    if (textLikeCount <= 2) return true;
+  }
+
+  return false;
+}
+
+function collectContextRoots(el: FillableElement): ParentNode[] {
+  if (!(el instanceof HTMLElement)) return [];
   const roots: ParentNode[] = [];
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
     if (el.form) roots.push(el.form);
@@ -147,13 +176,7 @@ function hasNearbyPasswordField(el: FillableElement): boolean {
   const formLike = el.closest('form,[role="form"]');
   if (formLike) roots.push(formLike);
   if (el.parentElement) roots.push(el.parentElement);
-
-  for (const root of roots) {
-    const passwordField = root.querySelector('input[type="password"], input[autocomplete="current-password"], input[autocomplete="new-password"]');
-    if (passwordField && passwordField !== el) return true;
-  }
-
-  return false;
+  return roots;
 }
 
 function clean(value: string): string {
