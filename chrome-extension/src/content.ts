@@ -123,14 +123,37 @@ function classify(el: FillableElement): 'username' | 'email' | 'password' | 'otp
     : [];
   const signal = clean([el.id, el.getAttribute('autocomplete') || '', el.getAttribute('aria-label') || '', ...textualHints].join(' '));
   const textLikeTypes = new Set(['text', 'search', 'tel', 'number', '']);
+  const negativeTerms = ['code', 'context', 'search', 'query', 'comment', 'message', 'note', 'content'];
 
   if (inputType === 'password' || signal.includes('password') || signal.includes('passwd')) return 'password';
   if (inputType === 'email' || signal.includes('email')) return 'email';
   if (signal.includes('otp') || signal.includes('totp') || signal.includes('2fa') || signal.includes('verificationcode') || signal.includes('authcode') || signal.includes('one-time')) return 'otp';
   if (textLikeTypes.has(inputType)) {
+    if (negativeTerms.some((term) => signal.includes(term))) return 'other';
     if (signal.includes('user') || signal.includes('login') || signal.includes('account') || signal.includes('identifier')) return 'username';
+    if (hasNearbyPasswordField(el)) return 'username';
+    if (inputType === 'text' || inputType === '') return 'username';
   }
   return 'other';
+}
+
+function hasNearbyPasswordField(el: FillableElement): boolean {
+  if (!(el instanceof HTMLElement)) return false;
+
+  const roots: ParentNode[] = [];
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    if (el.form) roots.push(el.form);
+  }
+  const formLike = el.closest('form,[role="form"]');
+  if (formLike) roots.push(formLike);
+  if (el.parentElement) roots.push(el.parentElement);
+
+  for (const root of roots) {
+    const passwordField = root.querySelector('input[type="password"], input[autocomplete="current-password"], input[autocomplete="new-password"]');
+    if (passwordField && passwordField !== el) return true;
+  }
+
+  return false;
 }
 
 function clean(value: string): string {
