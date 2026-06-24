@@ -27,4 +27,7 @@ test('compiled content script includes inline dropdown show/hide logic', async (
   // improved styling: two-line structure
   assert.match(content, /fontWeight.*600|600.*fontWeight/, 'bold title style must be present');
   assert.match(content, /buildItemRow|renderDropdownItems/, 'item row builder must be present');
+  assert.match(content, /closest\(\s*['"]\[data-kp-dropdown-item\]['"]\s*\)/, 'nested dropdown clicks must resolve to the row');
+  assert.match(content, /selectDropdownItem/, 'dropdown item selection helper must be present');
+  assert.match(content, /closest\(\s*['"]\[data-kp-dropdown\]['"]\s*\)/, 'outside-click dismissal must recognize nested dropdown elements');
 });

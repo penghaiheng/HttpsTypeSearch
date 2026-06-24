@@ -27,6 +27,7 @@ let suppressInteractionUntil = 0;
 
 let currentDropdown: HTMLElement | null = null;
 let dropdownAnchor: FillableElement | null = null;
+const dropdownItemsByRow = new WeakMap<HTMLElement, ContentSearchItem>();
 
 let inlineSuggestionsEnabled = true;
 let lastResults: ContentSearchItem[] = [];
@@ -335,9 +336,32 @@ function filterAndUpdateDropdown(query: string): void {
   renderDropdownItems(currentDropdown, filtered);
 }
 
+function resolveEventElement(target: EventTarget | null): Element | null {
+  if (target instanceof Element) return target;
+  if (target instanceof Node) return target.parentElement;
+  return null;
+}
+
+function resolveDropdownItemTarget(target: EventTarget | null): HTMLElement | null {
+  return resolveEventElement(target)?.closest<HTMLElement>('[data-kp-dropdown-item]') ?? null;
+}
+
+function selectDropdownItem(target: EventTarget | null): boolean {
+  const row = resolveDropdownItemTarget(target);
+  if (!row) return false;
+
+  const item = dropdownItemsByRow.get(row);
+  if (!item) return false;
+
+  hideDropdown();
+  chrome.runtime.sendMessage({ type: 'INLINE_FILL_REQUEST', item }).catch(() => {});
+  return true;
+}
+
 function buildItemRow(item: ContentSearchItem): HTMLElement {
   const row = document.createElement('div');
   row.setAttribute('data-kp-dropdown-item', '');
+  dropdownItemsByRow.set(row, item);
 
   const title = String(item.Title || '(untitled)');
   const username = String(item.UserName || '');
@@ -382,13 +406,6 @@ function buildItemRow(item: ContentSearchItem): HTMLElement {
     row.style.backgroundColor = '';
   });
 
-  row.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    hideDropdown();
-    chrome.runtime.sendMessage({ type: 'INLINE_FILL_REQUEST', item }).catch(() => {});
-  });
-
   return row;
 }
 
@@ -425,7 +442,15 @@ function showDropdown(anchor: FillableElement, items: ContentSearchItem[]): void
   } as Partial<CSSStyleDeclaration>);
 
   dropdown.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
     e.preventDefault();
+    e.stopPropagation();
+    void selectDropdownItem(e.target);
+  });
+
+  dropdown.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
   });
 
   renderDropdownItems(dropdown, items);
@@ -454,9 +479,9 @@ function hideDropdown(): void {
 function bindDropdownDismissal(): void {
   document.addEventListener('mousedown', (e) => {
     if (!currentDropdown) return;
-    const target = e.target as Node;
-    if (currentDropdown.contains(target)) return;
-    if (dropdownAnchor && (dropdownAnchor === target || dropdownAnchor.contains(target))) return;
+    const target = resolveEventElement(e.target);
+    if (target?.closest('[data-kp-dropdown]')) return;
+    if (dropdownAnchor && target && (dropdownAnchor === target || dropdownAnchor.contains(target))) return;
     hideDropdown();
   }, { capture: true });
 
